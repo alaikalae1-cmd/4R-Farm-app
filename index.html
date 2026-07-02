@@ -347,7 +347,7 @@
             if (!navigator.onLine) { setSyncStatus('📴', 'Offline - pakai data lokal', '#FF9800'); return; }
             try {
                 if (!silent) setSyncStatus('🔄', 'Mengambil data terbaru...');
-                let res = await fetch(API_URL, { method: 'GET' });
+                let res = await fetch(API_URL, { method: 'GET', redirect: 'follow' });
                 let json = await res.json();
                 if (!json.ok) throw new Error(json.error || 'Gagal mengambil data');
                 let d = json.data;
@@ -383,7 +383,7 @@
             try {
                 setSyncStatus('🔄', 'Sinkronisasi ke server...');
                 let payload = { produksi: dataProduksi, pemasukan: dataPemasukan, pengeluaran: dataPengeluaran, po: dataPO, populasi: populasi, harga: harga, stokAwal: stokAwal };
-                let res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+                let res = await fetch(API_URL, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
                 let json = await res.json();
                 if (!json.ok) throw new Error(json.error || 'Gagal menyimpan');
                 setSyncStatus('✅', 'Tersimpan di server', '#2E7D32');
