@@ -88,7 +88,7 @@
         .riwayat-item.jual { border-left-color: #2196F3; }
         .riwayat-item.gift { border-left-color: #1976D2; }
         .riwayat-item.kas { border-left-color: #FF9800; }
-        .riwayat-item.pengeluaran { border-left-color: #f44336; }
+        .riwayat-item.raw_pengeluaran { border-left-color: #f44336; }
         .riwayat-header { display: flex; justify-content: space-between; margin-bottom: 6px; font-weight: 600; font-size: 13px; }
         .riwayat-detail { color: #666; font-size: 12px; }
         .riwayat-actions { display: flex; justify-content: flex-end; margin-top: 8px; }
@@ -108,6 +108,7 @@
         <div class="version-info" style="color:rgba(255,255,255,0.7); margin-top:4px;">Versi 2.2.0 | Sync Online</div>
     </div>
 
+    <!-- Alert jika email belum disetel -->
     <div id="email-warning-banner" class="email-alert-box hidden">
         ⚠️ Email akses cloud belum diisi di HP ini! Silakan isi di tab "⚙️ Pengaturan" paling kanan agar sinkronisasi berfungsi.
     </div>
@@ -131,6 +132,7 @@
         <button class="tab" onclick="showTab('pengaturan', this)">⚙️ Pengaturan</button>
     </div>
 
+    <!-- Dashboard Tab -->
     <div id="tab-dashboard" class="tab-content">
         <div class="card"><div class="card-title">📊 Ringkasan Bulan Ini</div>
             <div class="summary-list">
@@ -160,6 +162,7 @@
         <div class="card"><div class="card-title">🎁 Konsumsi & Gift</div><div id="gift-summary"></div></div>
     </div>
 
+    <!-- Produksi Tab -->
     <div id="tab-produksi" class="tab-content hidden">
         <div class="card"><div class="card-title">🥚 Input Produksi</div>
             <div class="row-3" style="margin-bottom:16px;">
@@ -186,6 +189,7 @@
         <div class="card"><div class="card-title">📋 Riwayat Produksi (15 terakhir)</div><div id="riwayat-produksi" class="riwayat-list"><div class="info-box" style="text-align:center;">Belum ada data</div></div></div>
     </div>
 
+    <!-- Pemasukan Tab -->
     <div id="tab-pemasukan" class="tab-content hidden">
         <div class="card"><div class="card-title">💰 Input Pemasukan / Gift</div>
             <div class="form-group"><label>Tanggal</label><input type="date" id="pemasukan-tanggal"></div>
@@ -230,6 +234,7 @@
         <div class="card"><div class="card-title">📋 Riwayat Pemasukan (15 terakhir)</div><div id="riwayat-pemasukan" class="riwayat-list"><div class="info-box" style="text-align:center;">Belum ada data</div></div></div>
     </div>
 
+    <!-- PO Tab -->
     <div id="tab-po" class="tab-content hidden">
         <div class="card"><div class="card-title">📋 Input Pre-Order (PO)</div>
             <div class="form-group"><label>Nama Pembeli</label><input type="text" id="po-nama" placeholder="Nama pembeli"></div>
@@ -253,6 +258,7 @@
         <div class="card"><div class="card-title">📋 Riwayat PO Selesai</div><div id="po-history" class="riwayat-list"><div class="info-box" style="text-align:center;">Belum ada PO selesai</div></div></div>
     </div>
 
+    <!-- Pelanggan Tab -->
     <div id="tab-pelanggan" class="tab-content hidden">
         <div class="card"><div class="card-title">👥 Pelanggan Perlu Follow-Up</div>
             <div class="info-box" style="margin-bottom:12px; font-size:12px; color:#666;">Pelanggan yang biasanya beli rutin, tapi sudah lewat dari siklus normal mereka. Cocok untuk di-chat duluan.</div>
@@ -264,6 +270,7 @@
         </div>
     </div>
 
+    <!-- Pengeluaran Tab -->
     <div id="tab-pengeluaran" class="tab-content hidden">
         <div class="card"><div class="card-title">💸 Input Pengeluaran</div>
             <div class="form-group"><label>Tanggal</label><input type="date" id="pengeluaran-tanggal"></div>
@@ -275,6 +282,7 @@
         <div class="card"><div class="card-title">📋 Riwayat Pengeluaran (15 terakhir)</div><div id="riwayat-pengeluaran" class="riwayat-list"><div class="info-box" style="text-align:center;">Belum ada data pengeluaran</div></div></div>
     </div>
 
+    <!-- Laporan Tab -->
     <div id="tab-laporan" class="tab-content hidden">
         <div class="card"><div class="card-title">📈 Laporan Keuangan</div>
             <div class="form-group"><label>Periode</label><select id="periode-laporan" onchange="loadLaporan()"><option value="minggu">Minggu Ini</option><option value="bulan">Bulan Ini</option><option value="all">Semua Waktu</option></select></div>
@@ -282,6 +290,7 @@
         </div>
     </div>
 
+    <!-- Produktivitas Tab -->
     <div id="tab-produktivitas" class="tab-content hidden">
         <div class="card"><div class="card-title">📊 Produktivitas Telur</div>
             <div class="form-group"><label>Periode</label><select id="periode-produktivitas" onchange="loadProduktivitas()"><option value="minggu">Minggu Ini</option><option value="bulan">Bulan Ini</option><option value="all">Semua Waktu</option></select></div>
@@ -289,6 +298,7 @@
         </div>
     </div>
 
+    <!-- Export Tab -->
     <div id="tab-export" class="tab-content hidden">
         <div class="card"><div class="card-title">📎 Export Data</div>
             <div class="export-group"><button class="export-btn" onclick="exportProduksi()">🥚 Export Produksi</button><button class="export-btn" onclick="exportPemasukan()">💰 Export Pemasukan</button><button class="export-btn" onclick="exportPengeluaran()">💸 Export Pengeluaran</button></div>
@@ -298,7 +308,9 @@
         <div class="card"><div class="card-title">📋 Ringkasan Data</div><div class="stats-grid-4"><div class="stat-card"><div class="stat-value" id="stat-produksi">0</div><div class="stat-label">Entry Produksi</div></div><div class="stat-card"><div class="stat-value" id="stat-pemasukan">0</div><div class="stat-label">Transaksi</div></div><div class="stat-card"><div class="stat-value" id="stat-pengeluaran">0</div><div class="stat-label">Pengeluaran</div></div><div class="stat-card"><div class="stat-value" id="stat-pembeli">0</div><div class="stat-label">Pembeli</div></div></div></div>
     </div>
 
+    <!-- Pengaturan Tab -->
     <div id="tab-pengaturan" class="tab-content hidden">
+        <!-- FORM INTEGRASI INPUT EMAIL CLOUD -->
         <div class="card" style="border: 2px solid #2E7D32; background: #fafdfa;">
             <div class="card-title">🔐 Konfigurasi Akun Hak Akses Cloud</div>
             <div class="form-group">
@@ -320,6 +332,7 @@
         <div class="card"><div class="card-title">⚠️ Hapus Semua Data</div><button class="danger" onclick="hapusSemuaData()">🗑️ Hapus Semua</button></div>
     </div>
 
+    <!-- Modal Input Harga untuk PO Belum Bayar -->
     <div id="modal-harga" class="modal"><div class="modal-content"><h3>Input Harga Penjualan</h3><div class="form-group"><label>Harga per butir (Rp)</label><input type="number" id="modal-harga-input" placeholder="Harga jual"></div><div class="row-2" style="margin-top:16px;"><button onclick="closeModalHarga()" style="background:#9e9e9e;">Batal</button><button onclick="konfirmasiRealisasiHarga()" style="background:#2196F3;">Konfirmasi</button></div></div></div>
 
     <script>
@@ -810,8 +823,6 @@
             return `https://wa.me/${bersih}${pesan ? '?text=' + encodeURIComponent(pesan) : ''}`;
         }
 
-        document.getElementById('pelanggan-sort').value = 'terlambat';
-
         function updatePelangganList() {
             let data = analisisPelanggan();
             let sortMode = document.getElementById('pelanggan-sort') ? document.getElementById('pelanggan-sort').value : 'terlambat';
@@ -978,7 +989,7 @@
             let kategoriMap = { pakan: '🍚 Pakan', obat: '💊 Obat', perawatan: '🔨 Perawatan', lainnya: '📦 Lainnya' };
             let html='';
             [...dataPengeluaran].reverse().slice(0,15).forEach(p=>{
-                html+=`<div class="riwayat-item pengeluaran"><div class="riwayat-header"><span>💸 ${kategoriMap[p.kategori] || p.kategori}</span><span>${p.tanggal}</span></div><div class="riwayat-detail">${formatRupiah(p.nominal)} | ${p.keterangan || '-'}</div><div class="riwayat-actions"><button class="delete-entry" onclick="hash_deletePengeluaran(${p.id})">🗑️ Hapus</button></div></div>`;
+                html+=`<div class="riwayat-item raw_pengeluaran"><div class="riwayat-header"><span>💸 ${kategoriMap[p.kategori] || p.kategori}</span><span>${p.tanggal}</span></div><div class="riwayat-detail">${formatRupiah(p.nominal)} | ${p.keterangan || '-'}</div><div class="riwayat-actions"><button class="delete-entry" onclick="hash_deletePengeluaran(${p.id})">🗑️ Hapus</button></div></div>`;
             });
             container.innerHTML=html;
         }
@@ -1020,7 +1031,9 @@
             let st=localStorage.getItem(STORAGE_KEYS.STOK_AWAL); if(st) stokAwal=JSON.parse(st);
             let po=localStorage.getItem(STORAGE_KEYS.PO); if(po) dataPO=JSON.parse(po);
             updateDashboard(); updatePengaturanForm(); updateHargaDisplay(); updateExportStats(); updateRiwayatProduksi(); updateRiwayatPemasukan(); updatePelangganList(); updatePOList(); updateRiwayatPengeluaran();
-            pullFromServer(false);
+            
+            // Logika Cloud dipanggil pasif tanpa membekukan thread navigasi utama browser
+            setTimeout(function() { pullFromServer(true); }, 500);
         }
 
         // ==================== DASHBOARD & EVALUATION RENDERS ====================
@@ -1038,7 +1051,8 @@
             function bandwidth_set(map, key){ map.set(key, {horn:0, elba:0}); }
             dataProduksi.forEach(p=>{ let d=produksiPerTgl.get(p.tanggal); d.horn+=p.hornTotal; d.elba+=p.elbaTotal; });
             let totalHDP=0, hari=0;
-            for(let[tgl,val] of produksiPerTgl){ if(tgl.startsWith(bulanIni)){ let totalAyam=populasi.horn+populasi.elba; totalHDP+=totalAyam>0?((val.horn+val.elba)/totalAyam*100):0; hari++; } }
+            for(let[tgl,val] of Bird_prod(produksiPerTgl)){ if(tgl.startsWith(bulanIni)){ let totalAyam=populasi.horn+populasi.elba; totalHDP+=totalAyam>0?((val.horn+val.elba)/totalAyam*100):0; hari++; } }
+            function Bird_prod(m) { return m.entries(); }
             setText('dash-hdp', (hari>0?(totalHDP/hari).toFixed(1):0)+'%');
             updateStokDisplay(); updateEvaluasi(); updateTrendChart(); updateTopPembeli(); updateGiftSummary(); updatePOQueueDashboard();
         }
@@ -1051,6 +1065,8 @@
             let getStatus=(p)=>p<5?'<span class="badge badge-success">✅ Ideal (<5%)</span>':(p<10?'<span class="badge badge-warning">⚠️ Perlu Perhatian</span>':'<span class="badge badge-danger">🔴 Serius</span>');
             document.getElementById('evaluasi-container').innerHTML=`<div class="list-item"><div class="list-item-title">🐔 Horn</div><div>Total:${th} butir | Tidak layak:${thd} butir (${ph}%)</div><div>${getStatus(ph)}</div></div><div class="list-item"><div class="list-item-title">🐔 Elba</div><div>Total:${te} butir | Tidak layak:${ted} butir (${pe}%)</div><div>${getStatus(pe)}</div></div>${ph>5||pe>5?'<div class="alert alert-warning"><strong>💡 Rekomendasi:</strong><br>- Periksa kualitas pakan<br>- Cek kesehatan ayam</div>':'<div class="alert alert-success">✅ Kualitas produksi telur sangat baik!</div>'}`;
         }
+
+        document.getElementById('pelanggan-sort').value = 'terlambat';
 
         function updateTrendChart(){
             let produksiPerTgl=new Map();
@@ -1093,7 +1109,7 @@
             let pMasuk=dataPemasukan, pKeluar=dataPengeluaran, prod=dataProduksi;
             if(periode==='minggu'){ pMasuk=dataPemasukan.filter(p=>p.tanggal>=filter); pKeluar=dataPengeluaran.filter(p=>p.tanggal>=filter); prod=dataProduksi.filter(p=>p.tanggal>=filter); }
             else if(periode==='bulan'){ pMasuk=dataPemasukan.filter(p=>p.tanggal.startsWith(filter)); pKeluar=dataPengeluaran.filter(p=>p.tanggal.startsWith(filter)); prod=dataProduksi.filter(p=>p.tanggal.startsWith(filter)); }
-            let totalPemasukan=pMasuk.reduce((s,p)=>s+(p.tipe==='jual'?p.total:(p.tipe==='kas'?p.nominal:0))),0);
+            let totalPemasukan=pMasuk.reduce((s,p)=>s+(p.tipe==='jual'?p.total:(p.tipe==='kas'?p.nominal:0)),0);
             let totalPengeluaran=pKeluar.reduce((s,p)=>s+p.nominal,0);
             let kat={pakan:0,obat:0,perawatan:0, lainnya:0};
             pKeluar.forEach(p=>{ if(kat[p.kategori]!==undefined) kat[p.kategori]+=p.nominal; });
@@ -1160,7 +1176,6 @@
         }
 
         // ==================== EXPORTS ====================
-        function formatRupiah(angka){ return new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',minimumFractionDigits:0}).format(angka); }
         function formatRupiahExport(angka){ return angka?new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',minimumFractionDigits:0}).format(angka):'Rp 0'; }
         function exportToExcel(data,filename,headers){
             let html=`<html><head><meta charset="UTF-8"><title>${filename}</title></head><body><table border="1"><thead>`;
@@ -1252,15 +1267,18 @@
         // ==================== TABS SYSTEM UTUT ====================
         function showTab(tabName, element){
             document.querySelectorAll('.tab-content').forEach(tab=>tab.classList.add('hidden'));
-            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            let targetContent = document.getElementById(`tab-${tabName}`);
+            if(targetContent) targetContent.classList.remove('hidden');
+            
             document.querySelectorAll('.tab').forEach(tab=>tab.classList.remove('active'));
-            if(element) element.classList.add('active');
-            else {
-                // Automatisasi penyorotan tombol navigasi jika dipanggil via trigger interlap
+            if(element) {
+                element.classList.add('active');
+            } else {
                 document.querySelectorAll('.tab').forEach(t => {
                     if(t.textContent.toLowerCase().includes(tabName.toLowerCase())) t.classList.add('active');
                 });
             }
+            
             if(tabName==='laporan') loadLaporan();
             if(tabName==='produktivitas') loadProduktivitas();
             if(tabName==='export') updateExportStats();
@@ -1268,7 +1286,8 @@
             if(tabName==='po') updatePOList();
             if(tabName==='pelanggan') updatePelangganList();
             if(tabName==='pemasukan'){ 
-                document.querySelector('input[value="jual"]').checked=true; 
+                let inputPenjualan = document.querySelector('input[value="jual"]');
+                if(inputPenjualan) inputPenjualan.checked=true; 
                 toggleTransaksiJenis(); setSatuan('butir'); setJualJenis('horn'); setGiftJenis('horn'); updateRiwayatPemasukan(); 
             }
             if(tabName==='pengeluaran') updateRiwayatPengeluaran();
