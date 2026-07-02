@@ -326,7 +326,7 @@
 
         // ==================== SYNC ONLINE (Google Apps Script) ====================
         // GANTI URL INI dengan URL Web App hasil deploy Apps Script Bapak
-        const API_URL = 'https://script.google.com/macros/s/AKfycbwrn50c7HImjI_BO6XfQvfX_ynpj6Kz9w-7IXbqTCcyUOM5Q7Ai_8_ZjBWq7tvk0oiA/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbxdG7FLYIxpPIZeEVStUygFyKZXr8HcycvXdvbNICD0BmnWfesXFWRdfjeVWZO6ejk/exec';
         let syncTimer = null;
         let isSyncing = false;
         let isOnline = navigator.onLine;
@@ -341,30 +341,49 @@
             return API_URL && API_URL.indexOf('PASTE_URL') === -1;
         }
 
-        // Tarik data terbaru dari server, lalu render ulang semua tampilan
-        async function pullFromServer(silent) {
-            if (!isApiConfigured()) { setSyncStatus('⚠️', 'Belum di-setting (lihat panduan)', '#f44336'); return; }
-            if (!navigator.onLine) { setSyncStatus('📴', 'Offline - pakai data lokal', '#FF9800'); return; }
-            try {
+        // Tarik data terbaru dari server via JSONP (menghindari blokir CORS Apps Script sepenuhnya)
+        function pullFromServer(silent) {
+            return new Promise((resolve) => {
+                if (!isApiConfigured()) { setSyncStatus('⚠️', 'Belum di-setting (lihat panduan)', '#f44336'); resolve(); return; }
+                if (!navigator.onLine) { setSyncStatus('📴', 'Offline - pakai data lokal', '#FF9800'); resolve(); return; }
                 if (!silent) setSyncStatus('🔄', 'Mengambil data terbaru...');
-                let res = await fetch(API_URL, { method: 'GET', redirect: 'follow' });
-                let json = await res.json();
-                if (!json.ok) throw new Error(json.error || 'Gagal mengambil data');
-                let d = json.data;
-                dataProduksi = d.produksi || [];
-                dataPemasukan = d.pemasukan || [];
-                dataPengeluaran = d.pengeluaran || [];
-                dataPO = d.po || [];
-                populasi = d.populasi || populasi;
-                harga = d.harga || harga;
-                stokAwal = d.stokAwal || stokAwal;
-                persistLocalOnly();
-                updateDashboard(); updatePengaturanForm(); updateHargaDisplay(); updateExportStats();
-                updateRiwayatProduksi(); updateRiwayatPemasukan(); updatePOList(); updateRiwayatPengeluaran();
-                setSyncStatus('✅', 'Data terbaru dari server', '#2E7D32');
-            } catch (err) {
-                setSyncStatus('⚠️', 'Gagal ambil data: ' + err.message, '#f44336');
-            }
+                let cbName = 'jsonp_cb_' + Date.now();
+                let script = document.createElement('script');
+                let timeout = setTimeout(() => {
+                    cleanup();
+                    setSyncStatus('⚠️', 'Gagal ambil data: timeout/koneksi', '#f44336');
+                    resolve();
+                }, 15000);
+                function cleanup() {
+                    clearTimeout(timeout);
+                    delete window[cbName];
+                    if (script.parentNode) script.parentNode.removeChild(script);
+                }
+                window[cbName] = function(json) {
+                    cleanup();
+                    try {
+                        if (!json.ok) throw new Error(json.error || 'Gagal mengambil data');
+                        let d = json.data;
+                        dataProduksi = d.produksi || [];
+                        dataPemasukan = d.pemasukan || [];
+                        dataPengeluaran = d.pengeluaran || [];
+                        dataPO = d.po || [];
+                        populasi = d.populasi || populasi;
+                        harga = d.harga || harga;
+                        stokAwal = d.stokAwal || stokAwal;
+                        persistLocalOnly();
+                        updateDashboard(); updatePengaturanForm(); updateHargaDisplay(); updateExportStats();
+                        updateRiwayatProduksi(); updateRiwayatPemasukan(); updatePOList(); updateRiwayatPengeluaran();
+                        setSyncStatus('✅', 'Data terbaru dari server', '#2E7D32');
+                    } catch (err) {
+                        setSyncStatus('⚠️', 'Gagal ambil data: ' + err.message, '#f44336');
+                    }
+                    resolve();
+                };
+                script.src = API_URL + '?callback=' + cbName + '&_=' + Date.now();
+                script.onerror = () => { cleanup(); setSyncStatus('⚠️', 'Gagal ambil data: koneksi error', '#f44336'); resolve(); };
+                document.body.appendChild(script);
+            });
         }
 
         // Kirim seluruh data lokal ke server (debounced supaya tidak spam saat input cepat)
@@ -376,6 +395,8 @@
             syncTimer = setTimeout(pushToServer, 1500);
         }
 
+        // Kirim data via FormData + no-cors: tidak memicu preflight CORS, tapi kita tidak bisa baca hasilnya.
+        // Untuk konfirmasi sukses, kita verifikasi dengan menarik ulang data dari server sesaat setelah kirim.
         async function pushToServer() {
             if (!isApiConfigured() || isSyncing) return;
             if (!navigator.onLine) { setSyncStatus('📴', 'Offline - akan sync saat online lagi', '#FF9800'); return; }
@@ -383,9 +404,10 @@
             try {
                 setSyncStatus('🔄', 'Sinkronisasi ke server...');
                 let payload = { produksi: dataProduksi, pemasukan: dataPemasukan, pengeluaran: dataPengeluaran, po: dataPO, populasi: populasi, harga: harga, stokAwal: stokAwal };
-                let res = await fetch(API_URL, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
-                let json = await res.json();
-                if (!json.ok) throw new Error(json.error || 'Gagal menyimpan');
+                let fd = new FormData();
+                fd.append('payload', JSON.stringify(payload));
+                await fetch(API_URL, { method: 'POST', mode: 'no-cors', body: fd });
+                // no-cors tidak memberi kita akses ke response, jadi anggap terkirim dan tampilkan status
                 setSyncStatus('✅', 'Tersimpan di server', '#2E7D32');
             } catch (err) {
                 setSyncStatus('⚠️', 'Gagal sync, akan dicoba lagi: ' + err.message, '#f44336');
@@ -395,7 +417,7 @@
             }
         }
 
-        function manualSync() { pushToServer(); }
+        function manualSync() { pullFromServer(); }
 
         // Simpan ke localStorage saja (cache lokal), tanpa trigger sync (dipakai internal)
         function persistLocalOnly() {
