@@ -64,6 +64,7 @@
         .po-body { font-size: 12px; color: #555; margin-bottom: 8px; line-height: 1.4; }
         .po-footer { display: flex; justify-content: flex-end; gap: 6px; }
         .config-section { margin-top: 20px; border-top: 2px dashed #ddd; padding-top: 15px; }
+        .email-alert-box { background: #ffebee; color: #c62828; padding: 12px; border-radius: 10px; font-size: 12px; font-weight: 600; margin-bottom: 16px; text-align: center; }
     </style>
 </head>
 <body>
@@ -71,6 +72,10 @@
     <div class="header">
         <h1>4R Farm</h1>
         <p>Spesialis Telur Omega 3 & DHA</p>
+    </div>
+
+    <div id="email-warning-banner" class="email-alert-box hidden">
+        ⚠️ Akun email akses belum dikonfigurasi di HP ini. Pergi ke tab "Profil" di kanan bawah untuk mengisinya!
     </div>
 
     <div class="sync-banner">
@@ -310,6 +315,18 @@
     </div>
 
     <div id="sec-export" class="tab-content">
+        <div class="card" style="border: 2px solid #2E7D32;">
+            <h2>🔐 Pengaturan Akun Hak Akses Cloud</h2>
+            <p style="font-size: 11px; color:#555; margin-bottom:10px;">
+                Masukkan email Google Anda di bawah ini agar aplikasi ini diizinkan menarik & menyimpan data ke cloud server 4R Farm.
+            </p>
+            <div class="form-group">
+                <label>Email Terdaftar (Whitelist)</label>
+                <input type="text" id="app-user-email-input" placeholder="contoh: ratna.fajri22@gmail.com atau alaikalae1@gmail.com">
+            </div>
+            <button class="btn" style="background-color: #0288d1;" onclick="simpanEmailManual()">Simpan Akun Email HP Ini</button>
+        </div>
+
         <div class="card">
             <h2>📈 Ringkasan Keuangan Bulanan</h2>
             <div id="export-stats" style="font-size:13px; color:#333; line-height:1.6;">
@@ -350,17 +367,10 @@
                 </div>
             </div>
             <button class="btn btn-secondary" onclick="saveSettings()">Update Master Profil</button>
-            
-            <div class="config-section">
-                <button class="btn btn-secondary btn-sm" onclick="gantiEmailAplikasi()" style="background-color: #0288d1; width: 100%;">
-                    🔑 Ganti / Setel Ulang Akun Email Terdaftar
-                </button>
-            </div>
         </div>
 
         <div class="card">
             <h2>💾 Backup Data Manual (.json)</h2>
-            <p style="font-size:11px; color:#666; margin-bottom:8px;">Unduh semua data lokal Anda menjadi file teks untuk cadangan aman seandainya HP rusak.</p>
             <button class="btn btn-secondary btn-sm" onclick="exportDataRaw()">Download Backup Data</button>
         </div>
     </div>
@@ -376,7 +386,7 @@
             Produksi
         </button>
         <button id="menu-transaksi" class="menu-item" onclick="switchMainSection('transaksi')">
-            <svg viewBox="0 0 24 24"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5".67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
             Keuangan
         </button>
         <button id="menu-po" class="menu-item" onclick="switchMainSection('po')">
@@ -391,40 +401,39 @@
 
 
     <script>
-        // ================= INTEGRASI API & GOOGLE APPS SCRIPT =================
-        // GANTI URL DI BAWAH INI DENGAN URL WEB APP DEPLOYMENT GOOGLE SCRIPT ANDA
+        // ================= INTEGRASI BACKEND SYNC =================
         const API_URL = 'https://script.google.com/macros/s/AKfycbzre3X2S7m02i1L_gGjX3q6Wp_2y0I7C5qK40jNfA/exec'; 
 
-        // ================= LOGIKA AUTO-DETEKSI EMAIL =================
+        // Fungsi Ambil Email Aman (Tanpa Pop-up Terblokir)
         function getSavedUserEmail() {
           let email = localStorage.getItem('user_email');
           if (!email) {
-            email = prompt("Masukkan email Google Anda untuk akses database 4R Farm:");
-            if (email) {
-              email = email.trim().toLowerCase();
-              localStorage.setItem('user_email', email);
-            }
+             document.getElementById('email-warning-banner').classList.remove('hidden');
+             return '';
           }
-          return email || '';
+          document.getElementById('email-warning-banner').classList.add('hidden');
+          return email.trim().toLowerCase();
         }
 
-        function gantiEmailAplikasi() {
-          let emailBaru = prompt("Masukkan email Google baru Anda:", localStorage.getItem('user_email') || '');
-          if (emailBaru) {
-            localStorage.setItem('user_email', emailBaru.trim().toLowerCase());
-            alert("Email akses berhasil diperbarui! Aplikasi akan memuat ulang data.");
-            hasPendingChanges = false;
-            pullFromServer(false);
+        function simpanEmailManual() {
+          let inputEl = document.getElementById('app-user-email-input');
+          let emailVal = inputEl.value;
+          if(!emailVal || emailVal.indexOf('@') === -1) {
+             alert("Masukkan alamat email Gmail yang valid!");
+             return;
           }
+          localStorage.setItem('user_email', emailVal.trim().toLowerCase());
+          alert("Email akses berhasil disimpan di perangkat ini! Memuat data cloud...");
+          document.getElementById('email-warning-banner').classList.add('hidden');
+          pullFromServer(false);
         }
 
-        // ================= ENGINE UTAMA APLIKASI LOKAL =================
+        // ================= CORE LOCAL DATABASE ENGINE =================
         let dataProduksi = [];
         let dataPemasukan = [];
         let dataPengeluaran = [];
         let dataPO = [];
 
-        // Master Setelan Default
         let populasi = { horn: 6, elba: 32 };
         let harga = { horn: 2000, elba: 2500 };
         let stokAwal = { horn: 0, elba: 0 };
@@ -449,9 +458,9 @@
             hasPendingChanges = true;
             pendingChangeVersion++;
             persistLocalOnly();
-            setSyncStatus('💾', 'Ada data baru belum disave ke server', '#EF6C00');
+            setSyncStatus('💾', 'Ada input data belum disinkron ke cloud', '#EF6C00');
             if (syncTimer) clearTimeout(syncTimer);
-            syncTimer = setTimeout(pushToServer, 5000); // sync otomatis jeda 5 detik
+            syncTimer = setTimeout(pushToServer, 5000);
         }
 
         function persistLocalOnly() {
@@ -474,19 +483,21 @@
             if(localStorage.getItem('4rfarm_stokawal')) stokAwal = JSON.parse(localStorage.getItem('4rfarm_stokawal'));
         }
 
-        // Ambil Data Server (GET) dengan Bypass Email Parameter
+        // Ambil Data Cloud via JSONP Bypass Parameter
         function pullFromServer(silent) {
           return new Promise((resolve) => {
-            if (!isApiConfigured()) { setSyncStatus('⚠️', 'Belum di-setting (lihat panduan)', '#f44336'); resolve(); return; }
-            if (!navigator.onLine) { setSyncStatus('📴', 'Offline - pakai data lokal', '#FF9800'); resolve(); return; }
+            const emailAktif = getSavedUserEmail();
+            if (!emailAktif) { setSyncStatus('⚠️', 'Email akun belum di-setting', '#f44336'); resolve(); return; }
+            if (!isApiConfigured()) { setSyncStatus('⚠️', 'API URL salah', '#f44336'); resolve(); return; }
+            if (!navigator.onLine) { setSyncStatus('📴', 'Mode Offline aktif', '#FF9800'); resolve(); return; }
             if (hasPendingChanges) { resolve(); return; }
-            if (!silent) setSyncStatus('🔄', 'Mengambil data terbaru dari cloud...');
+            if (!silent) setSyncStatus('🔄', 'Menghubungkan ke Google Sheets...');
             
             let cbName = 'jsonp_cb_' + Date.now();
             let script = document.createElement('script');
             let timeout = setTimeout(() => {
                 cleanup();
-                setSyncStatus('⚠️', 'Gagal ambil data: timeout koneksi', '#f44336');
+                setSyncStatus('⚠️', 'Koneksi Cloud Timeout', '#f44336');
                 resolve();
             }, 15000);
             
@@ -500,7 +511,7 @@
                 cleanup();
                 try {
                     if (hasPendingChanges) { resolve(); return; }
-                    if (!json.ok) throw new Error(json.error || 'Gagal mengambil data');
+                    if (!json.ok) throw new Error(json.error || 'Akses Ditolak');
                     let d = json.data;
                     dataProduksi = d.produksi || [];
                     dataPemasukan = d.pemasukan || [];
@@ -511,29 +522,30 @@
                     stokAwal = d.stokAwal || stokAwal;
                     persistLocalOnly();
                     updateAllUI();
-                    setSyncStatus('✅', 'Data cloud terbaru sinkron', '#2E7D32');
+                    setSyncStatus('✅', 'Koneksi Cloud Sinkron Aktif', '#2E7D32');
                 } catch (err) {
-                    setSyncStatus('⚠️', 'Gagal sinkron: ' + err.message, '#f44336');
+                    setSyncStatus('⚠️', 'Gagal: ' + err.message, '#f44336');
                 }
                 resolve();
             };
             
-            const emailAktif = getSavedUserEmail();
-            script.src = API_URL + '?callback=' + cbName + '&userEmail=' + encodeURIComponent(emailAktif) + '&_=' + Date.now();
-            
-            script.onerror = () => { cleanup(); setSyncStatus('⚠️', 'Gagal terkoneksi ke Google Script', '#f44336'); resolve(); };
+            script.src = API_URL + '?callback=' + cbName + '&userEmail=' + encodeURIComponent(emailAktif) + '&_= ' + Date.now();
+            script.onerror = () => { cleanup(); setSyncStatus('⚠️', 'Jaringan error / Pemblokiran Akses', '#f44336'); resolve(); };
             document.body.appendChild(script);
           });
         }
 
-        // Simpan Data Server (POST via Form Iframe) dengan Bypass Email Parameter
+        // Kirim Data Cloud via Iframe + Form Post
         function pushToServer() {
           return new Promise((resolve) => {
+            const emailAktif = getSavedUserEmail();
+            if (!emailAktif) { setSyncStatus('⚠️', 'Email belum diisi', '#f44336'); resolve(); return; }
             if (!isApiConfigured() || isSyncing) { resolve(); return; }
-            if (!navigator.onLine) { setSyncStatus('📴', 'Offline - pending cloud sync', '#FF9800'); resolve(); return; }
+            if (!navigator.onLine) { setSyncStatus('📴', 'Menunggu Online untuk Sync', '#FF9800'); resolve(); return; }
+            
             isSyncing = true;
             let versionAtStart = pendingChangeVersion;
-            setSyncStatus('🔄', 'Mengirim data ke Google Sheets...');
+            setSyncStatus('🔄', 'Menyimpan data ke Cloud Google Sheets...');
             let payload = { produksi: dataProduksi, pemasukan: dataPemasukan, pengeluaran: dataPengeluaran, po: dataPO, populasi: populasi, harga: harga, stokAwal: stokAwal };
 
             let iframeName = 'sync_frame_' + Date.now();
@@ -544,8 +556,6 @@
 
             let form = document.createElement('form');
             form.method = 'POST';
-            
-            const emailAktif = getSavedUserEmail();
             form.action = API_URL + '?userEmail=' + encodeURIComponent(emailAktif);
             form.target = iframeName;
 
@@ -566,29 +576,29 @@
                 if (success) {
                     if (pendingChangeVersion === versionAtStart) {
                         hasPendingChanges = false;
-                        setSyncStatus('🔄', 'Verifikasi data...', '#FF9800');
+                        setSyncStatus('🔄', 'Memvalidasi data...', '#FF9800');
                         setTimeout(() => { pullFromServer(true).then(resolve); }, 1200);
                     } else {
-                        setSyncStatus('💾', 'Ada input baru, sinkron ulang...', '#FF9800');
+                        setSyncStatus('💾', 'Menyinkronkan data baru...', '#FF9800');
                         syncTimer = setTimeout(pushToServer, 500);
                         resolve();
                     }
                 } else {
-                    setSyncStatus('⚠️', msg || 'Gagal tersimpan ke Google Sheets', '#f44336');
+                    setSyncStatus('⚠️', msg || 'Gagal tersimpan ke server', '#f44336');
                     syncTimer = setTimeout(pushToServer, 8000);
                     resolve();
                 }
             }
 
             iframe.onload = () => finish(true);
-            let timeout = setTimeout(() => finish(false, 'Gagal sync: cloud timeout'), 15000);
+            let timeout = setTimeout(() => finish(false, 'Timeout Kirim Data'), 15000);
             iframe.onload = () => { clearTimeout(timeout); finish(true); };
 
             form.submit();
           });
         }
 
-        // ================= LOGIKA INTERFACE (UI) & HITUNGAN =================
+        // ================= LOGIKA INTERFACE (UI) =================
         function switchMainSection(secId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
@@ -681,13 +691,10 @@
             updateRekapFinansial();
         }
 
-        // Logika Hitung Stok Realtime Sesuai Masuk & Keluar Telur
         function hitungStokRealtime() {
             let totalProdHorn = dataProduksi.reduce((acc, r) => acc + ((r.hornTotal || 0) - (r.hornGagal || 0)), 0);
             let totalProdElba = dataProduksi.reduce((acc, r) => acc + ((r.elbaTotal || 0) - (r.elbaGagal || 0)), 0);
-
-            let totalKeluarHorn = 0;
-            let totalKeluarElba = 0;
+            let totalKeluarHorn = 0, totalKeluarElba = 0;
 
             dataPemasukan.forEach(p => {
                 if(p.kategori === 'jual' || p.kategori === 'gift') {
@@ -702,10 +709,7 @@
 
             document.getElementById('stok-horn').innerText = currentHorn + " butir";
             document.getElementById('stok-elba').innerText = currentElba + " butir";
-
-            // Tambahkan warning text di bawah box jika minus / kritis
-            let infoSummary = `Total Produksi Terbuku: ${totalProdHorn} Horn, ${totalProdElba} Elba.<br>Total Distribusi Penjualan/Gift: ${totalKeluarHorn} Horn, ${totalKeluarElba} Elba.`;
-            document.getElementById('dashboard-summary').innerHTML = infoSummary;
+            document.getElementById('dashboard-summary').innerHTML = `Total Produksi Terbuku: ${totalProdHorn} Horn, ${totalProdElba} Elba.<br>Total Distribusi: ${totalKeluarHorn} Horn, ${totalKeluarElba} Elba.`;
         }
 
         function updateDashboardProduktivitas() {
@@ -811,6 +815,7 @@
             document.getElementById('set-harga-elba').value = harga.elba;
             document.getElementById('set-stok-horn').value = stokAwal.horn;
             document.getElementById('set-stok-elba').value = stokAwal.elba;
+            document.getElementById('app-user-email-input').value = localStorage.getItem('user_email') || '';
         }
 
         function updateAutocompletePelanggan() {
@@ -838,7 +843,7 @@
                             🏁 Keuntungan Bersih (Profit): <b style='color:#0d47a1; font-size:15px;'>Rp ${formatRupiah(profit)}</b>`;
         }
 
-        // ================= ACTION HANDLERS (SIMPAN & HAPUS) =================
+        // ================= EVENT ACTION HANDLERS =================
         function saveProduksi() {
             let tgl = document.getElementById('produksi-tanggal').value;
             if(!tgl) { alert("Pilih tanggal!"); return; }
@@ -961,9 +966,7 @@
             if(!po) return;
             if(!confirm(`Selesaikan pesanan atas nama ${po.nama}? Telur akan otomatis mengurangi stok dan masuk kas.`)) return;
             
-            po.status = 'completed'; // Tandai selesai
-
-            // Otomatis inject data penjualan berdasarkan profil harga master saat ini
+            po.status = 'completed';
             let hrgSatuan = po.jenis === 'horn' ? harga.horn : harga.elba;
             let itemPenjualan = {
                 id: 'masuk_po_conv_' + Date.now(),
@@ -979,7 +982,7 @@
             };
             dataPemasukan.push(itemPenjualan);
             markChanged(); updateAllUI();
-            alert("PO sukses diselesaikan & dikonversi otomatis menjadi Penjualan Kas!");
+            alert("PO sukses diselesaikan & masuk kas!");
         }
 
         function saveSettings() {
@@ -1014,7 +1017,7 @@
             return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
         }
 
-        // ================= CORE INISIALISASI AWAL =================
+        // ================= INITIALIZATION =================
         window.onload = function() {
             loadLocalData();
             
@@ -1028,7 +1031,7 @@
             hitungLayak();
             updateAllUI();
 
-            // Jalankan sinkronisasi awalan dengan server cloud Google Sheets
+            // Jalankan sinkronisasi cloud
             pullFromServer(false);
         };
 
