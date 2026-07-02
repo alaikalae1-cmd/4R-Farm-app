@@ -6,7 +6,7 @@
     <title>4R Farm - Pencatatan Peternakan + PO</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 16px; padding-bottom: 80px; }
+        body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 16px; padding-bottom: 90px; }
         .header { background: linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%); color: white; padding: 20px; border-radius: 20px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .header h1 { font-size: 24px; margin-bottom: 4px; }
         .header p { font-size: 14px; opacity: 0.9; }
@@ -54,16 +54,18 @@
         .history-info div:last-child { font-size: 11px; color: #777; margin-top: 2px; }
         .history-action { display: flex; gap: 8px; align-items: center; }
         .cust-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f5f5f5; font-size: 13px; }
-        .floating-menu { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; padding: 10px 0; box-shadow: 0 -4px 12px rgba(0,0,0,0.08); border-top: 1px solid #eee; z-index: 999; }
-        .menu-item { background: none; border: none; font-size: 11px; font-weight: 600; color: #777; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
+        
+        /* Navigasi Bawah Fix */
+        .floating-menu { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; padding: 12px 0; box-shadow: 0 -4px 12px rgba(0,0,0,0.1); border-top: 1px solid #eee; z-index: 999; }
+        .menu-item { background: none; border: none; font-size: 12px; font-weight: 600; color: #777; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; text-align: center; }
         .menu-item.active { color: #2E7D32; }
-        .menu-item svg { width: 22px; height: 22px; fill: currentColor; }
+        .menu-item .icon { font-size: 20px; }
+        
         .hidden { display: none !important; }
         .po-card { border: 1px solid #e0e0e0; border-radius: 10px; padding: 12px; margin-bottom: 10px; background: #fafafa; }
         .po-header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 6px; font-size: 14px; }
         .po-body { font-size: 12px; color: #555; margin-bottom: 8px; line-height: 1.4; }
         .po-footer { display: flex; justify-content: flex-end; gap: 6px; }
-        .config-section { margin-top: 20px; border-top: 2px dashed #ddd; padding-top: 15px; }
         .email-alert-box { background: #ffebee; color: #c62828; padding: 12px; border-radius: 10px; font-size: 12px; font-weight: 600; margin-bottom: 16px; text-align: center; }
     </style>
 </head>
@@ -74,8 +76,9 @@
         <p>Spesialis Telur Omega 3 & DHA</p>
     </div>
 
+    <!-- Banner error jika email belum disetel -->
     <div id="email-warning-banner" class="email-alert-box hidden">
-        ⚠️ Akun email akses belum dikonfigurasi di HP ini. Pergi ke tab "Profil" di kanan bawah untuk mengisi email Anda!
+        ⚠️ Email akses cloud belum diisi di HP ini! Silakan klik menu "Profil ⚙️" di kanan bawah untuk memasukkan email Anda.
     </div>
 
     <div class="sync-banner">
@@ -86,6 +89,7 @@
         <button class="btn btn-secondary btn-sm" onclick="pushToServer()" style="margin-left:8px;">Sync Now</button>
     </div>
 
+    <!-- ================= DASHBOARD SECTION ================= -->
     <div id="sec-dashboard" class="tab-content active">
         <div class="card">
             <h2>📊 Stok & Ringkasan Hari Ini</h2>
@@ -122,6 +126,7 @@
         </div>
     </div>
 
+    <!-- ================= PRODUKSI SECTION ================= -->
     <div id="sec-produksi" class="tab-content">
         <div class="card">
             <h2>🥚 Input Produksi Harian</h2>
@@ -161,6 +166,7 @@
         </div>
     </div>
 
+    <!-- ================= KEUANGAN / TRANSAKSI SECTION ================= -->
     <div id="sec-transaksi" class="tab-content">
         <div class="tabs">
             <button class="tab-btn active" onclick="switchTxTab('pemasukan')">Pemasukan / Penjualan</button>
@@ -281,6 +287,7 @@
         </div>
     </div>
 
+    <!-- ================= PRE-ORDER SECTION ================= -->
     <div id="sec-po" class="tab-content">
         <div class="card">
             <h2>📝 Buat Pesanan Baru (PO)</h2>
@@ -314,14 +321,16 @@
         </div>
     </div>
 
+    <!-- ================= PROFIL & SETTING SECTION ================= -->
     <div id="sec-export" class="tab-content">
-        <div class="card" style="border: 2px solid #2E7D32;">
+        <!-- SEKTOR SETTING EMAIL HAK AKSES -->
+        <div class="card" style="border: 2px solid #2E7D32; background: #fbfdfb;">
             <h2>🔐 Pengaturan Akun Hak Akses Cloud</h2>
-            <p style="font-size: 11px; color:#555; margin-bottom:10px;">
-                Masukkan email Google Anda di bawah ini agar aplikasi diizinkan menarik & menyimpan data ke cloud server 4R Farm Bapak.
+            <p style="font-size: 12px; color:#555; margin-bottom:12px;">
+                Masukkan email Google Anda di bawah ini agar sistem diizinkan mengakses data Sheets 4R Farm Bapak.
             </p>
             <div class="form-group">
-                <label>Email Terdaftar (Whitelist)</label>
+                <label>Email Terdaftar di Whitelist</label>
                 <input type="text" id="app-user-email-input" placeholder="contoh: ratna.fajri22@gmail.com">
             </div>
             <button class="btn" style="background-color: #0288d1;" onclick="simpanEmailManual()">Simpan Akun Email HP Ini</button>
@@ -375,36 +384,35 @@
         </div>
     </div>
 
+    <!-- ================= NAVBAR BAWAH (FIXED MENU) ================= -->
     <div class="floating-menu">
         <button id="menu-dashboard" class="menu-item active" onclick="switchMainSection('dashboard')">
-            <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-            Home
+            <span class="icon">📊</span>
+            <span>Home</span>
         </button>
         <button id="menu-produksi" class="menu-item" onclick="switchMainSection('produksi')">
-            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-            Produksi
+            <span class="icon">🥚</span>
+            <span>Produksi</span>
         </button>
         <button id="menu-transaksi" class="menu-item" onclick="switchMainSection('transaksi')">
-            <svg viewBox="0 0 24 24"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
-            Keuangan
+            <span class="icon">💰</span>
+            <span>Keuangan</span>
         </button>
         <button id="menu-po" class="menu-item" onclick="switchMainSection('po')">
-            <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
-            PO Antrean
+            <span class="icon">📋</span>
+            <span>PO Antrean</span>
         </button>
         <button id="menu-export" class="menu-item" onclick="switchMainSection('export')">
-            <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-            Profil
+            <span class="icon">⚙️</span>
+            <span>Profil</span>
         </button>
     </div>
 
 
     <script>
-        // ================= INTEGRASI BACKEND SYNC =================
-        // Menggunakan URL Web App Google Apps Script Anda yang baru
+        // ================= ENGINE BACKEND SYNC =================
         const API_URL = 'https://script.google.com/macros/s/AKfycbyW1969nYIFUYxaFeyT2un9WTf6Xtb4K8q2BvhT-P5PARAZ4Q33SHcgs4o8zABXIWlE/exec'; 
 
-        // Fungsi Ambil Email Aman dari Browser
         function getSavedUserEmail() {
           let email = localStorage.getItem('user_email');
           if (!email) {
@@ -423,12 +431,12 @@
              return;
           }
           localStorage.setItem('user_email', emailVal.trim().toLowerCase());
-          alert("Email akses berhasil disimpan di perangkat ini! Menghubungkan ulang ke cloud...");
+          alert("Email akses cloud berhasil disimpan! Memuat data cloud...");
           document.getElementById('email-warning-banner').classList.add('hidden');
           pullFromServer(false);
         }
 
-        // ================= CORE LOCAL DATABASE ENGINE =================
+        // ================= DATA LOGIC ENGINE =================
         let dataProduksi = [];
         let dataPemasukan = [];
         let dataPengeluaran = [];
@@ -458,7 +466,7 @@
             hasPendingChanges = true;
             pendingChangeVersion++;
             persistLocalOnly();
-            setSyncStatus('💾', 'Ada input data belum disinkron ke cloud', '#EF6C00');
+            setSyncStatus('💾', 'Ada input baru belum disinkron ke cloud', '#EF6C00');
             if (syncTimer) clearTimeout(syncTimer);
             syncTimer = setTimeout(pushToServer, 5000);
         }
@@ -483,7 +491,6 @@
             if(localStorage.getItem('4rfarm_stokawal')) stokAwal = JSON.parse(localStorage.getItem('4rfarm_stokawal'));
         }
 
-        // Ambil Data Cloud via JSONP Bypass Parameter
         function pullFromServer(silent) {
           return new Promise((resolve) => {
             const emailAktif = getSavedUserEmail();
@@ -491,7 +498,7 @@
             if (!isApiConfigured()) { setSyncStatus('⚠️', 'API URL salah', '#f44336'); resolve(); return; }
             if (!navigator.onLine) { setSyncStatus('📴', 'Mode Offline aktif', '#FF9800'); resolve(); return; }
             if (hasPendingChanges) { resolve(); return; }
-            if (!silent) setSyncStatus('🔄', 'Menghubungkan ke Google Sheets...');
+            if (!silent) setSyncStatus('🔄', 'Menghubungkan ke cloud server...');
             
             let cbName = 'jsonp_cb_' + Date.now();
             let script = document.createElement('script');
@@ -522,7 +529,7 @@
                     stokAwal = d.stokAwal || stokAwal;
                     persistLocalOnly();
                     updateAllUI();
-                    setSyncStatus('✅', 'Koneksi Cloud Sinkron Aktif', '#2E7D32');
+                    setSyncStatus('✅', 'Koneksi Cloud Aktif & Sinkron', '#2E7D32');
                 } catch (err) {
                     setSyncStatus('⚠️', 'Gagal: ' + err.message, '#f44336');
                 }
@@ -535,7 +542,6 @@
           });
         }
 
-        // Kirim Data Cloud via Iframe + Form Post
         function pushToServer() {
           return new Promise((resolve) => {
             const emailAktif = getSavedUserEmail();
@@ -598,7 +604,7 @@
           });
         }
 
-        // ================= LOGIKA UI & DISPLAY =================
+        // ================= LOGIKA INTERFACE UI =================
         function switchMainSection(secId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
@@ -843,7 +849,7 @@
                             🏁 Keuntungan Bersih (Profit): <b style='color:#0d47a1; font-size:15px;'>Rp ${formatRupiah(profit)}</b>`;
         }
 
-        // ================= ACTION HANDLERS =================
+        // ================= INPUT ACTIONS =================
         function saveProduksi() {
             let tgl = document.getElementById('produksi-tanggal').value;
             if(!tgl) { alert("Pilih tanggal!"); return; }
@@ -890,7 +896,7 @@
 
             if (jenis === 'lain') {
                 item.totalUang = parseInt(prompt("Masukkan total uang masuk (Rp) untuk transaksi Lain-lain ini:")) || 0;
-                if(item.totalUang <= 0) { alert("Nominal dibatalkan/tidak valid!"); return; }
+                if(item.totalUang <= 0) { alert("Nominal tidak valid!"); return; }
             }
 
             dataPemasukan.push(item);
@@ -1005,7 +1011,7 @@
             a.click();
         }
 
-        // ================= HELPERS =================
+        // ================= UTILS FORMATTING =================
         function formatTgl(str) {
             if(!str) return '';
             let p = str.split('-');
@@ -1017,7 +1023,7 @@
             return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
         }
 
-        // ================= INTIALIZATION =================
+        // ================= APPLICATION INITS =================
         window.onload = function() {
             loadLocalData();
             
@@ -1031,7 +1037,7 @@
             hitungLayak();
             updateAllUI();
 
-            // Jalankan sinkronisasi cloud awal
+            // Ambil data awal cloud
             pullFromServer(false);
         };
 
