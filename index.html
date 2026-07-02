@@ -337,6 +337,12 @@
             if (textEl) { textEl.innerText = text; textEl.style.color = color || '#666'; }
         }
 
+        // Helper aman: set innerText hanya kalau elemen ada di DOM (menghindari error saat tab belum dirender)
+        function setText(id, value) {
+            let el = document.getElementById(id);
+            if (el) el.innerText = value;
+        }
+
         function isApiConfigured() {
             return API_URL && API_URL.indexOf('PASTE_URL') === -1;
         }
@@ -642,11 +648,11 @@
         function setSatuan(satuan){
             satuanAktif=satuan;
             if(satuan==='butir'){
-                document.getElementById('btn-butir').classList.add('active'); document.getElementById('btn-pack').classList.remove('active');
-                document.getElementById('label-jumlah').innerText='Jumlah (butir)'; document.getElementById('label-harga').innerText='Harga per butir (Rp)';
+                let bb=document.getElementById('btn-butir'); if(bb) bb.classList.add('active'); let bp=document.getElementById('btn-pack'); if(bp) bp.classList.remove('active');
+                setText('label-jumlah','Jumlah (butir)'); setText('label-harga','Harga per butir (Rp)');
             }else{
-                document.getElementById('btn-butir').classList.remove('active'); document.getElementById('btn-pack').classList.add('active');
-                document.getElementById('label-jumlah').innerText='Jumlah (pack)'; document.getElementById('label-harga').innerText='Harga per pack (Rp)';
+                let bb2=document.getElementById('btn-butir'); if(bb2) bb2.classList.remove('active'); let bp2=document.getElementById('btn-pack'); if(bp2) bp2.classList.add('active');
+                setText('label-jumlah','Jumlah (pack)'); setText('label-harga','Harga per pack (Rp)');
             }
         }
 
@@ -740,16 +746,16 @@
             alert('Harga disimpan!'); 
         }
         function updateHargaDisplay(){ 
-            document.getElementById('harga-horn-display').innerText=harga.horn; 
-            document.getElementById('harga-elba-display').innerText=harga.elba; 
-            document.getElementById('setting-horn-price').value=harga.horn; 
-            document.getElementById('setting-elba-price').value=harga.elba; 
+            setText('harga-horn-display', harga.horn); 
+            setText('harga-elba-display', harga.elba); 
+            let sh=document.getElementById('setting-horn-price'); if(sh) sh.value=harga.horn;
+            let se=document.getElementById('setting-elba-price'); if(se) se.value=harga.elba;
             // Update tampilan tombol jenis
-            document.getElementById('jual-btn-horn').innerHTML = `🐔 HORN (Rp ${harga.horn})`;
-            document.getElementById('jual-btn-elba').innerHTML = `🐔 ELBA (Rp ${harga.elba})`;
+            let jh=document.getElementById('jual-btn-horn'); if(jh) jh.innerHTML = `🐔 HORN (Rp ${harga.horn})`;
+            let je=document.getElementById('jual-btn-elba'); if(je) je.innerHTML = `🐔 ELBA (Rp ${harga.elba})`;
         }
-        function updatePengaturanForm(){ document.getElementById('setting-horn-pop').value=populasi.horn; document.getElementById('setting-elba-pop').value=populasi.elba; }
-        function updateExportStats(){ let pembeliUnik=new Set(dataPemasukan.filter(p=>p.tipe==='jual'&&p.pembeli).map(p=>p.pembeli)); document.getElementById('stat-produksi').innerText=dataProduksi.length; document.getElementById('stat-pemasukan').innerText=dataPemasukan.length; document.getElementById('stat-pengeluaran').innerText=dataPengeluaran.length; document.getElementById('stat-pembeli').innerText=pembeliUnik.size; }
+        function updatePengaturanForm(){ let hp=document.getElementById('setting-horn-pop'); if(hp) hp.value=populasi.horn; let ep=document.getElementById('setting-elba-pop'); if(ep) ep.value=populasi.elba; }
+        function updateExportStats(){ let pembeliUnik=new Set(dataPemasukan.filter(p=>p.tipe==='jual'&&p.pembeli).map(p=>p.pembeli)); setText('stat-produksi', dataProduksi.length); setText('stat-pemasukan', dataPemasukan.length); setText('stat-pengeluaran', dataPengeluaran.length); setText('stat-pembeli', pembeliUnik.size); }
 
         function loadAllData(){
             // 1) Tampilkan dulu data cache lokal biar app langsung kelihatan isinya (cepat, walau offline)
@@ -767,19 +773,19 @@
 
         // ==================== DASHBOARD ====================
         function updateDashboard(){
-            document.getElementById('pop-horn').innerText=populasi.horn; document.getElementById('pop-elba').innerText=populasi.elba;
+            setText('pop-horn', populasi.horn); setText('pop-elba', populasi.elba);
             let now=new Date(), bulanIni=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
             let pemasukan=dataPemasukan.filter(p=>p.tanggal.startsWith(bulanIni)&&(p.tipe==='jual'?p.total:(p.tipe==='kas'?p.nominal:0))).reduce((s,p)=>s+(p.tipe==='jual'?p.total:(p.tipe==='kas'?p.nominal:0)),0);
             let pengeluaran=dataPengeluaran.filter(p=>p.tanggal.startsWith(bulanIni)).reduce((s,p)=>s+p.nominal,0);
-            document.getElementById('dash-pemasukan').innerText=formatRupiah(pemasukan);
-            document.getElementById('dash-pengeluaran').innerText=formatRupiah(pengeluaran);
+            setText('dash-pemasukan', formatRupiah(pemasukan));
+            setText('dash-pengeluaran', formatRupiah(pengeluaran));
             let laba=pemasukan-pengeluaran, labaEl=document.getElementById('dash-laba');
-            labaEl.innerText=formatRupiah(laba); if(laba<0) labaEl.classList.add('negative'); else labaEl.classList.remove('negative');
+            if(labaEl){ labaEl.innerText=formatRupiah(laba); if(laba<0) labaEl.classList.add('negative'); else labaEl.classList.remove('negative'); }
             let produksiPerTgl=new Map();
             dataProduksi.forEach(p=>{ if(!produksiPerTgl.has(p.tanggal)) produksiPerTgl.set(p.tanggal,{horn:0,elba:0}); let d=produksiPerTgl.get(p.tanggal); d.horn+=p.hornTotal; d.elba+=p.elbaTotal; });
             let totalHDP=0, hari=0;
             for(let[tgl,val] of produksiPerTgl){ if(tgl.startsWith(bulanIni)){ let totalAyam=populasi.horn+populasi.elba; totalHDP+=totalAyam>0?((val.horn+val.elba)/totalAyam*100):0; hari++; } }
-            document.getElementById('dash-hdp').innerText=(hari>0?(totalHDP/hari).toFixed(1):0)+'%';
+            setText('dash-hdp', (hari>0?(totalHDP/hari).toFixed(1):0)+'%');
             updateStokDisplay(); updateEvaluasi(); updateTrendChart(); updateTopPembeli(); updateGiftSummary(); updatePOQueueDashboard();
         }
 
