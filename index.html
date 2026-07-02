@@ -640,11 +640,19 @@
             let container = document.getElementById('po-list');
             if(activePO.length === 0){ container.innerHTML = '<div class="info-box" style="text-align:center;">Belum ada PO aktif</div>'; } else {
                 let html = '';
+                let totalKekuranganHorn = 0, totalKekuranganElba = 0; // akumulasi kekurangan berjalan sepanjang antrian FIFO
                 activePO.forEach(po => {
                     let stokCukup = false;
                     let kekurangan = 0;
-                    if(po.jenis === 'horn') { stokCukup = po.jumlahButir <= stokSisaHorn; if(stokCukup) stokSisaHorn -= po.jumlahButir; else { kekurangan = po.jumlahButir - stokSisaHorn; stokSisaHorn = 0; } }
-                    else { stokCukup = po.jumlahButir <= stokSisaElba; if(stokCukup) stokSisaElba -= po.jumlahButir; else { kekurangan = po.jumlahButir - stokSisaElba; stokSisaElba = 0; } }
+                    if(po.jenis === 'horn') {
+                        stokCukup = totalKekuranganHorn === 0 && po.jumlahButir <= stokSisaHorn;
+                        if(stokCukup) { stokSisaHorn -= po.jumlahButir; }
+                        else { kekurangan = totalKekuranganHorn + Math.max(0, po.jumlahButir - stokSisaHorn); totalKekuranganHorn = kekurangan; stokSisaHorn = 0; }
+                    } else {
+                        stokCukup = totalKekuranganElba === 0 && po.jumlahButir <= stokSisaElba;
+                        if(stokCukup) { stokSisaElba -= po.jumlahButir; }
+                        else { kekurangan = totalKekuranganElba + Math.max(0, po.jumlahButir - stokSisaElba); totalKekuranganElba = kekurangan; stokSisaElba = 0; }
+                    }
                     let stokInfo = stokCukup ? '✅ Stok cukup!' : '';
                     let estimasiInfo = '';
                     if (!stokCukup) {
@@ -670,15 +678,24 @@
             let stokSisaHorn = stok.horn;
             let stokSisaElba = stok.elba;
             let rata = hitungRataProduksiHarian();
-            let activePO = dataPO.filter(p => p.status === 'active').sort((a,b) => a.id - b.id).slice(0,5);
+            let allActivePO = dataPO.filter(p => p.status === 'active').sort((a,b) => a.id - b.id);
             let container = document.getElementById('po-queue-dashboard');
-            if(activePO.length === 0){ container.innerHTML = '<div class="info-box" style="text-align:center;">Belum ada PO</div>'; return; }
+            if(allActivePO.length === 0){ container.innerHTML = '<div class="info-box" style="text-align:center;">Belum ada PO</div>'; return; }
             let html = '';
-            activePO.forEach((po, idx) => {
+            let totalKekuranganHorn = 0, totalKekuranganElba = 0;
+            allActivePO.forEach((po, idx) => {
                 let stokCukup = false;
                 let kekurangan = 0;
-                if(po.jenis === 'horn') { stokCukup = po.jumlahButir <= stokSisaHorn; if(stokCukup) stokSisaHorn -= po.jumlahButir; else { kekurangan = po.jumlahButir - stokSisaHorn; stokSisaHorn = 0; } }
-                else { stokCukup = po.jumlahButir <= stokSisaElba; if(stokCukup) stokSisaElba -= po.jumlahButir; else { kekurangan = po.jumlahButir - stokSisaElba; stokSisaElba = 0; } }
+                if(po.jenis === 'horn') {
+                    stokCukup = totalKekuranganHorn === 0 && po.jumlahButir <= stokSisaHorn;
+                    if(stokCukup) { stokSisaHorn -= po.jumlahButir; }
+                    else { kekurangan = totalKekuranganHorn + Math.max(0, po.jumlahButir - stokSisaHorn); totalKekuranganHorn = kekurangan; stokSisaHorn = 0; }
+                } else {
+                    stokCukup = totalKekuranganElba === 0 && po.jumlahButir <= stokSisaElba;
+                    if(stokCukup) { stokSisaElba -= po.jumlahButir; }
+                    else { kekurangan = totalKekuranganElba + Math.max(0, po.jumlahButir - stokSisaElba); totalKekuranganElba = kekurangan; stokSisaElba = 0; }
+                }
+                if (idx >= 5) return; // hanya tampilkan 5 teratas, tapi perhitungan tetap jalan untuk semua
                 let stokInfo = stokCukup ? '✅ Stok cukup!' : '';
                 let estimasiInfo = '';
                 if (!stokCukup) {
