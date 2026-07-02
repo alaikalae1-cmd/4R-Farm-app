@@ -112,6 +112,7 @@
         <button class="tab" onclick="showTab('produksi', this)">🥚 Produksi</button>
         <button class="tab" onclick="showTab('pemasukan', this)">💰 Pemasukan</button>
         <button class="tab" onclick="showTab('po', this)">📋 PO</button>
+        <button class="tab" onclick="showTab('pelanggan', this)">👥 Pelanggan</button>
         <button class="tab" onclick="showTab('pengeluaran', this)">💸 Pengeluaran</button>
         <button class="tab" onclick="showTab('laporan', this)">📈 Laporan</button>
         <button class="tab" onclick="showTab('produktivitas', this)">📊 Produktivitas</button>
@@ -135,6 +136,7 @@
                 <div class="stat-card" style="background:#e8f5e9;"><div class="stat-value" id="stok-elba">0</div><div class="stat-label">Stok Elba (butir)</div></div>
             </div>
         </div>
+        <div id="po-notif-banner"></div>
         <div class="card"><div class="card-title">📋 Antrian PO (5 teratas)</div><div id="po-queue-dashboard" class="riwayat-list"><div class="info-box" style="text-align:center;">Belum ada PO</div></div></div>
         <div class="card"><div class="card-title">🐔 Populasi Saat Ini</div>
             <div class="stats-grid">
@@ -196,6 +198,7 @@
                 <div class="form-group"><label id="label-jumlah">Jumlah (butir)</label><input type="number" id="jual-jumlah" placeholder="Jumlah"></div>
                 <div class="form-group"><label id="label-harga">Harga per butir (Rp)</label><input type="number" id="jual-harga" placeholder="Harga"></div>
                 <div class="form-group"><label>Nama Pembeli <span style="color:#f44336;">*</span></label><input type="text" id="jual-pembeli" placeholder="Nama pembeli"></div>
+                <div class="form-group"><label>No. WhatsApp (opsional)</label><input type="tel" id="jual-wa" placeholder="Contoh: 081234567890"></div>
                 <div id="stok-warning-jual" class="alert alert-warning hidden">⚠️ Stok tidak mencukupi!</div>
             </div>
             <div id="form-gift" class="hidden">
@@ -240,6 +243,18 @@
         </div>
         <div class="card"><div class="card-title">📋 Daftar PO Aktif (Urutan FIFO)</div><div id="po-list" class="riwayat-list"><div class="info-box" style="text-align:center;">Belum ada PO</div></div></div>
         <div class="card"><div class="card-title">📋 Riwayat PO Selesai</div><div id="po-history" class="riwayat-list"><div class="info-box" style="text-align:center;">Belum ada PO selesai</div></div></div>
+    </div>
+
+    <!-- Pelanggan Tab -->
+    <div id="tab-pelanggan" class="tab-content hidden">
+        <div class="card"><div class="card-title">👥 Pelanggan Perlu Follow-Up</div>
+            <div class="info-box" style="margin-bottom:12px; font-size:12px; color:#666;">Pelanggan yang biasanya beli rutin, tapi sudah lewat dari siklus normal mereka. Cocok untuk di-chat duluan.</div>
+            <div id="pelanggan-followup" class="riwayat-list"><div class="info-box" style="text-align:center;">Belum ada data cukup</div></div>
+        </div>
+        <div class="card"><div class="card-title">👥 Semua Pelanggan</div>
+            <div class="form-group"><label>Urutkan</label><select id="pelanggan-sort" onchange="updatePelangganList()"><option value="terlambat">Paling Perlu Follow-Up</option><option value="total">Total Belanja Terbesar</option><option value="terakhir">Terakhir Beli</option><option value="frekuensi">Paling Sering Beli</option></select></div>
+            <div id="pelanggan-list" class="riwayat-list"><div class="info-box" style="text-align:center;">Belum ada data pelanggan</div></div>
+        </div>
     </div>
 
     <!-- Pengeluaran Tab -->
@@ -383,7 +398,7 @@
                         stokAwal = d.stokAwal || stokAwal;
                         persistLocalOnly();
                         updateDashboard(); updatePengaturanForm(); updateHargaDisplay(); updateExportStats();
-                        updateRiwayatProduksi(); updateRiwayatPemasukan(); updatePOList(); updateRiwayatPengeluaran();
+                        updateRiwayatProduksi(); updateRiwayatPemasukan(); updatePelangganList(); updatePOList(); updateRiwayatPengeluaran();
                         setSyncStatus('✅', 'Data terbaru dari server', '#2E7D32');
                     } catch (err) {
                         setSyncStatus('⚠️', 'Gagal ambil data: ' + err.message, '#f44336');
@@ -604,7 +619,7 @@
                 let total = po.jumlahButir * hargaJual;
                 dataPemasukan.push({ id: Date.now(), tanggal: new Date().toISOString().split('T')[0], tipe: 'jual', jenis: po.jenis, satuan: po.satuan, jumlah: po.jumlah, jumlahButir: po.jumlahButir, harga: hargaJual, total: total, pembeli: po.nama, dariPO: true });
                 dataPO = dataPO.filter(p => p.id !== id);
-                savePemasukan(); savePO(); updatePOList(); updateDashboard(); updateRiwayatPemasukan();
+                savePemasukan(); savePO(); updatePOList(); updateDashboard(); updateRiwayatPemasukan(); updatePelangganList();
                 alert(`PO ${po.nama} selesai! Penjualan tercatat otomatis.`);
             } else {
                 pendingPOId = id;
@@ -625,7 +640,7 @@
             let total = po.jumlahButir * hargaInput;
             dataPemasukan.push({ id: Date.now(), tanggal: new Date().toISOString().split('T')[0], tipe: 'jual', jenis: po.jenis, satuan: po.satuan, jumlah: po.jumlah, jumlahButir: po.jumlahButir, harga: hargaInput, total: total, pembeli: po.nama, dariPO: true });
             dataPO = dataPO.filter(p => p.id !== pendingPOId);
-            savePemasukan(); savePO(); updatePOList(); updateDashboard(); updateRiwayatPemasukan(); closeModalHarga();
+            savePemasukan(); savePO(); updatePOList(); updateDashboard(); updateRiwayatPemasukan(); updatePelangganList(); closeModalHarga();
             alert(`PO ${po.nama} selesai! Penjualan tercatat otomatis dengan harga Rp ${hargaInput.toLocaleString()}/butir.`);
         }
 
@@ -680,9 +695,11 @@
             let rata = hitungRataProduksiHarian();
             let allActivePO = dataPO.filter(p => p.status === 'active').sort((a,b) => a.id - b.id);
             let container = document.getElementById('po-queue-dashboard');
-            if(allActivePO.length === 0){ container.innerHTML = '<div class="info-box" style="text-align:center;">Belum ada PO</div>'; return; }
+            let banner = document.getElementById('po-notif-banner');
+            if(allActivePO.length === 0){ container.innerHTML = '<div class="info-box" style="text-align:center;">Belum ada PO</div>'; if(banner) banner.innerHTML = ''; return; }
             let html = '';
             let totalKekuranganHorn = 0, totalKekuranganElba = 0;
+            let siapCount = 0;
             allActivePO.forEach((po, idx) => {
                 let stokCukup = false;
                 let kekurangan = 0;
@@ -695,6 +712,7 @@
                     if(stokCukup) { stokSisaElba -= po.jumlahButir; }
                     else { kekurangan = totalKekuranganElba + Math.max(0, po.jumlahButir - stokSisaElba); totalKekuranganElba = kekurangan; stokSisaElba = 0; }
                 }
+                if (stokCukup) siapCount++;
                 if (idx >= 5) return; // hanya tampilkan 5 teratas, tapi perhitungan tetap jalan untuk semua
                 let stokInfo = stokCukup ? '✅ Stok cukup!' : '';
                 let estimasiInfo = '';
@@ -706,9 +724,105 @@
                 html += `<div class="po-item" style="padding:10px;"><div class="po-info"><div class="nama">${idx+1}. ${po.nama}</div><div class="detail">${po.jenis === 'horn' ? '🐔 Horn' : '🐔 Elba'} | ${po.jumlahButir} butir</div><div class="po-status">${po.lunas ? '<span class="status-lunas">✅ Lunas</span>' : '<span class="status-belum">💰 Belum bayar</span>'}</div>${stokCukup ? `<div class="po-status stok-cukup">${stokInfo}</div>` : ''}${estimasiInfo}</div></div>`;
             });
             container.innerHTML = html;
+            if (banner) {
+                if (siapCount > 0) {
+                    banner.innerHTML = `<div class="card" style="background:#E8F5E9; border:1px solid #66BB6A; padding:14px 16px; margin-bottom:12px; cursor:pointer;" onclick="document.querySelectorAll('.tab').forEach(t=>{if(t.textContent.includes('PO'))t.click()})">🔔 <b>${siapCount} PO siap direalisasi</b> — stok sudah cukup, cek tab PO</div>`;
+                } else {
+                    banner.innerHTML = '';
+                }
+            }
         }
 
         function savePO() { queueSync(); }
+
+        // ==================== PELANGGAN ====================
+        // Agregasi data penjualan per nama pembeli: total belanja, jumlah transaksi, tanggal-tanggal beli,
+        // rata-rata siklus repeat (hari), dan status apakah sudah "telat" dari siklus normalnya.
+        function analisisPelanggan() {
+            let perPembeli = new Map(); // nama -> { transaksi: [{tanggal, total, jumlahButir, jenis}], wa }
+            dataPemasukan.filter(p => p.tipe === 'jual' && p.pembeli && p.pembeli !== '-').forEach(p => {
+                if (!perPembeli.has(p.pembeli)) perPembeli.set(p.pembeli, { transaksi: [], wa: '' });
+                let d = perPembeli.get(p.pembeli);
+                d.transaksi.push({ tanggal: p.tanggal, total: p.total, jumlahButir: p.jumlahButir, jenis: p.jenis });
+                if (p.wa) d.wa = p.wa; // simpan WA terbaru yang pernah diisi
+            });
+
+            let today = new Date();
+            let hasil = [];
+            for (let [nama, d] of perPembeli) {
+                let tgls = d.transaksi.map(t => new Date(t.tanggal)).sort((a,b) => a-b);
+                let totalBelanja = d.transaksi.reduce((s,t) => s + t.total, 0);
+                let totalButir = d.transaksi.reduce((s,t) => s + t.jumlahButir, 0);
+                let jumlahTransaksi = d.transaksi.length;
+                let tglTerakhir = tgls[tgls.length - 1];
+                let hariSejakTerakhir = Math.floor((today - tglTerakhir) / (1000*60*60*24));
+
+                // Hitung rata-rata siklus repeat (selisih hari antar transaksi berurutan), minimal 2 transaksi
+                let rataCycle = null;
+                if (tgls.length >= 2) {
+                    let totalSelisih = 0;
+                    for (let i = 1; i < tgls.length; i++) totalSelisih += (tgls[i] - tgls[i-1]) / (1000*60*60*24);
+                    rataCycle = totalSelisih / (tgls.length - 1);
+                }
+
+                let statusFollowUp = null; // null = belum cukup data, true = perlu followup, false = masih normal
+                let telatHari = 0;
+                if (rataCycle !== null && rataCycle > 0) {
+                    telatHari = hariSejakTerakhir - rataCycle;
+                    statusFollowUp = telatHari > 0;
+                }
+
+                hasil.push({ nama, wa: d.wa, totalBelanja, totalButir, jumlahTransaksi, tglTerakhir: tglTerakhir.toISOString().split('T')[0], hariSejakTerakhir, rataCycle, statusFollowUp, telatHari });
+            }
+            return hasil;
+        }
+
+        function waLink(nomor, pesan) {
+            if (!nomor) return null;
+            let bersih = nomor.replace(/[^0-9]/g, '');
+            if (bersih.startsWith('0')) bersih = '62' + bersih.slice(1);
+            else if (!bersih.startsWith('62')) bersih = '62' + bersih;
+            return `https://wa.me/${bersih}${pesan ? '?text=' + encodeURIComponent(pesan) : ''}`;
+        }
+
+        function updatePelangganList() {
+            let data = analisisPelanggan();
+            let sortMode = document.getElementById('pelanggan-sort') ? document.getElementById('pelanggan-sort').value : 'terlambat';
+
+            // --- Kartu "Perlu Follow-Up" ---
+            let followUpContainer = document.getElementById('pelanggan-followup');
+            let perluFollowUp = data.filter(p => p.statusFollowUp === true).sort((a,b) => b.telatHari - a.telatHari);
+            if (perluFollowUp.length === 0) {
+                followUpContainer.innerHTML = '<div class="info-box" style="text-align:center;">Tidak ada pelanggan yang telat dari siklus biasanya 👍</div>';
+            } else {
+                let html = '';
+                perluFollowUp.forEach(p => {
+                    let pesanDefault = `Halo Kak ${p.nama}, stok telur omega 4R Farm sudah siap kalau mau order lagi 🥚`;
+                    let link = waLink(p.wa, pesanDefault);
+                    html += `<div class="po-item"><div class="po-info"><div class="nama">⚠️ ${p.nama}</div><div class="detail">Biasanya beli tiap ~${Math.round(p.rataCycle)} hari, sekarang sudah ${p.hariSejakTerakhir} hari</div><div class="po-status">Terakhir beli: ${p.tglTerakhir} | Total: ${formatRupiah(p.totalBelanja)}</div></div>${link ? `<div class="po-actions"><a href="${link}" target="_blank" class="small success" style="text-decoration:none; display:inline-block; text-align:center;">💬 Chat WA</a></div>` : ''}</div>`;
+                });
+                followUpContainer.innerHTML = html;
+            }
+
+            // --- Daftar semua pelanggan ---
+            let listContainer = document.getElementById('pelanggan-list');
+            if (data.length === 0) { listContainer.innerHTML = '<div class="info-box" style="text-align:center;">Belum ada data pelanggan</div>'; return; }
+            let sorted = [...data];
+            if (sortMode === 'total') sorted.sort((a,b) => b.totalBelanja - a.totalBelanja);
+            else if (sortMode === 'terakhir') sorted.sort((a,b) => a.hariSejakTerakhir - b.hariSejakTerakhir);
+            else if (sortMode === 'frekuensi') sorted.sort((a,b) => b.jumlahTransaksi - a.jumlahTransaksi);
+            else sorted.sort((a,b) => (b.statusFollowUp === true ? b.telatHari : -999) - (a.statusFollowUp === true ? a.telatHari : -999));
+
+            let html = '';
+            sorted.forEach(p => {
+                let cycleInfo = p.rataCycle !== null ? `Siklus rata-rata: ~${Math.round(p.rataCycle)} hari` : 'Baru 1x transaksi';
+                let statusBadge = p.statusFollowUp === true ? '<span class="status-belum">⚠️ Perlu follow-up</span>' : (p.statusFollowUp === false ? '<span class="status-lunas">✅ Masih normal</span>' : '');
+                let pesanDefault = `Halo Kak ${p.nama}, stok telur omega 4R Farm sudah siap kalau mau order lagi 🥚`;
+                let link = waLink(p.wa, pesanDefault);
+                html += `<div class="po-item"><div class="po-info"><div class="nama">👤 ${p.nama}</div><div class="detail">${p.jumlahTransaksi}x transaksi | ${p.totalButir} butir | ${formatRupiah(p.totalBelanja)}</div><div class="po-status">${cycleInfo}</div><div class="po-status">Terakhir beli: ${p.tglTerakhir} (${p.hariSejakTerakhir} hari lalu)</div><div class="po-status">${statusBadge}</div></div>${link ? `<div class="po-actions"><a href="${link}" target="_blank" class="small success" style="text-decoration:none; display:inline-block; text-align:center;">💬 WA</a></div>` : ''}</div>`;
+            });
+            listContainer.innerHTML = html;
+        }
 
         // ==================== PRODUKSI ====================
         function hitungLayak() {
@@ -777,12 +891,13 @@
                 let jumlah=parseInt(document.getElementById('jual-jumlah').value);
                 let hargaInput=parseInt(document.getElementById('jual-harga').value);
                 let pembeli=document.getElementById('jual-pembeli').value.trim();
+                let wa=document.getElementById('jual-wa').value.trim();
                 if(!jumlah||!hargaInput){alert('Isi jumlah dan harga!');return;}
                 if(!pembeli){alert('Nama pembeli wajib!');return;}
                 let jumlahButir=satuanAktif==='butir'?jumlah:jumlah*10, total=jumlah*hargaInput;
-                dataPemasukan.push({id:Date.now(), tanggal:tgl, tipe:'jual', jenis:jenis, satuan:satuanAktif, jumlah:jumlah, jumlahButir:jumlahButir, harga:hargaInput, total:total, pembeli:pembeli});
+                dataPemasukan.push({id:Date.now(), tanggal:tgl, tipe:'jual', jenis:jenis, satuan:satuanAktif, jumlah:jumlah, jumlahButir:jumlahButir, harga:hargaInput, total:total, pembeli:pembeli, wa:wa});
                 alert('Penjualan berhasil!');
-                document.getElementById('jual-jumlah').value=''; document.getElementById('jual-harga').value=''; document.getElementById('jual-pembeli').value='';
+                document.getElementById('jual-jumlah').value=''; document.getElementById('jual-harga').value=''; document.getElementById('jual-pembeli').value=''; document.getElementById('jual-wa').value='';
             }else if(jenisTransaksi==='gift'){
                 let jenis = giftJenisAktif;
                 let jumlah=parseInt(document.getElementById('gift-jumlah').value);
@@ -800,10 +915,10 @@
                 document.getElementById('kas-nominal').value=''; document.getElementById('kas-pembeli').value='';
             }
             dataPemasukan.sort((a,b)=>a.tanggal.localeCompare(b.tanggal));
-            savePemasukan(); updateDashboard(); updateRiwayatPemasukan(); updateExportStats();
+            savePemasukan(); updateDashboard(); updateRiwayatPemasukan(); updatePelangganList(); updateExportStats();
         }
 
-        function hapusPemasukan(id){ if(confirm('Hapus transaksi ini?')){ dataPemasukan=dataPemasukan.filter(p=>p.id!==id); savePemasukan(); updateDashboard(); updateRiwayatPemasukan(); updateExportStats(); alert('Dihapus!'); } }
+        function hapusPemasukan(id){ if(confirm('Hapus transaksi ini?')){ dataPemasukan=dataPemasukan.filter(p=>p.id!==id); savePemasukan(); updateDashboard(); updateRiwayatPemasukan(); updatePelangganList(); updateExportStats(); alert('Dihapus!'); } }
 
         function updateRiwayatPemasukan(){
             let container=document.getElementById('riwayat-pemasukan');
@@ -878,7 +993,7 @@
             let hr=localStorage.getItem(STORAGE_KEYS.HARGA); if(hr) harga=JSON.parse(hr);
             let st=localStorage.getItem(STORAGE_KEYS.STOK_AWAL); if(st) stokAwal=JSON.parse(st);
             let po=localStorage.getItem(STORAGE_KEYS.PO); if(po) dataPO=JSON.parse(po);
-            updateDashboard(); updatePengaturanForm(); updateHargaDisplay(); updateExportStats(); updateRiwayatProduksi(); updateRiwayatPemasukan(); updatePOList(); updateRiwayatPengeluaran();
+            updateDashboard(); updatePengaturanForm(); updateHargaDisplay(); updateExportStats(); updateRiwayatProduksi(); updateRiwayatPemasukan(); updatePelangganList(); updatePOList(); updateRiwayatPengeluaran();
             // 2) Lalu tarik data terbaru dari server (siapa tahu istri/suami baru input dari HP lain)
             pullFromServer();
         }
@@ -1130,12 +1245,12 @@
             document.getElementById('file-import').value='';
             document.getElementById('import-preview').classList.add('hidden');
             fileDataImport=null;
-            updatePengaturanForm(); updateHargaDisplay(); updateDashboard(); updateExportStats(); updateRiwayatProduksi(); updateRiwayatPemasukan(); updatePOList(); updateRiwayatPengeluaran();
+            updatePengaturanForm(); updateHargaDisplay(); updateDashboard(); updateExportStats(); updateRiwayatProduksi(); updateRiwayatPemasukan(); updatePelangganList(); updatePOList(); updateRiwayatPengeluaran();
             alert('Import selesai!');
         }
 
         function hapusSemuaData(){
-            if(confirm('Hapus SEMUA data?')){ if(prompt('Ketik "HAPUS" untuk konfirmasi')==='HAPUS'){ dataProduksi=[]; dataPemasukan=[]; dataPengeluaran=[]; dataPO=[]; stokAwal={horn:0,elba:0}; queueSync(); updateDashboard(); updateExportStats(); updateRiwayatProduksi(); updateRiwayatPemasukan(); updatePOList(); updateRiwayatPengeluaran(); alert('Semua data dihapus!'); }else{ alert('Batal'); } }
+            if(confirm('Hapus SEMUA data?')){ if(prompt('Ketik "HAPUS" untuk konfirmasi')==='HAPUS'){ dataProduksi=[]; dataPemasukan=[]; dataPengeluaran=[]; dataPO=[]; stokAwal={horn:0,elba:0}; queueSync(); updateDashboard(); updateExportStats(); updateRiwayatProduksi(); updateRiwayatPemasukan(); updatePelangganList(); updatePOList(); updateRiwayatPengeluaran(); alert('Semua data dihapus!'); }else{ alert('Batal'); } }
         }
 
         function showTab(tabName, element){
@@ -1148,13 +1263,14 @@
             if(tabName==='export') updateExportStats();
             if(tabName==='produksi') updateRiwayatProduksi();
             if(tabName==='po') updatePOList();
+            if(tabName==='pelanggan') updatePelangganList();
             if(tabName==='pemasukan'){ 
                 document.querySelector('input[value="jual"]').checked=true; 
                 toggleTransaksiJenis(); 
                 setSatuan('butir'); 
                 setJualJenis('horn');
                 setGiftJenis('horn');
-                updateRiwayatPemasukan(); 
+                updateRiwayatPemasukan(); updatePelangganList(); 
             }
             if(tabName==='pengeluaran') updateRiwayatPengeluaran();
             if(tabName==='dashboard') updateStokDisplay();
