@@ -401,26 +401,58 @@
             syncTimer = setTimeout(pushToServer, 1500);
         }
 
-        // Kirim data via FormData + no-cors: tidak memicu preflight CORS, tapi kita tidak bisa baca hasilnya.
-        // Untuk konfirmasi sukses, kita verifikasi dengan menarik ulang data dari server sesaat setelah kirim.
-        async function pushToServer() {
-            if (!isApiConfigured() || isSyncing) return;
-            if (!navigator.onLine) { setSyncStatus('📴', 'Offline - akan sync saat online lagi', '#FF9800'); return; }
-            isSyncing = true;
-            try {
+        // Kirim data via hidden iframe + form submit (bypass CORS total, seperti submit form biasa).
+        // Setelah kirim, tarik ulang data dari server untuk konfirmasi beneran tersimpan.
+        function pushToServer() {
+            return new Promise((resolve) => {
+                if (!isApiConfigured() || isSyncing) { resolve(); return; }
+                if (!navigator.onLine) { setSyncStatus('📴', 'Offline - akan sync saat online lagi', '#FF9800'); resolve(); return; }
+                isSyncing = true;
                 setSyncStatus('🔄', 'Sinkronisasi ke server...');
                 let payload = { produksi: dataProduksi, pemasukan: dataPemasukan, pengeluaran: dataPengeluaran, po: dataPO, populasi: populasi, harga: harga, stokAwal: stokAwal };
-                let fd = new FormData();
-                fd.append('payload', JSON.stringify(payload));
-                await fetch(API_URL, { method: 'POST', mode: 'no-cors', body: fd });
-                // no-cors tidak memberi kita akses ke response, jadi anggap terkirim dan tampilkan status
-                setSyncStatus('✅', 'Tersimpan di server', '#2E7D32');
-            } catch (err) {
-                setSyncStatus('⚠️', 'Gagal sync, akan dicoba lagi: ' + err.message, '#f44336');
-                syncTimer = setTimeout(pushToServer, 8000);
-            } finally {
-                isSyncing = false;
-            }
+
+                let iframeName = 'sync_frame_' + Date.now();
+                let iframe = document.createElement('iframe');
+                iframe.name = iframeName;
+                iframe.style.display = 'none';
+                document.body.appendChild(iframe);
+
+                let form = document.createElement('form');
+                form.method = 'POST';
+                form.action = API_URL;
+                form.target = iframeName;
+
+                let input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'payload';
+                input.value = JSON.stringify(payload);
+                form.appendChild(input);
+                document.body.appendChild(form);
+
+                let finished = false;
+                function finish(success, msg) {
+                    if (finished) return;
+                    finished = true;
+                    isSyncing = false;
+                    if (form.parentNode) form.parentNode.removeChild(form);
+                    setTimeout(() => { if (iframe.parentNode) iframe.parentNode.removeChild(iframe); }, 3000);
+                    if (success) {
+                        // Verifikasi beneran tersimpan dengan menarik ulang data dari server
+                        setSyncStatus('🔄', 'Memverifikasi...', '#FF9800');
+                        setTimeout(() => { pullFromServer(true).then(resolve); }, 1200);
+                    } else {
+                        setSyncStatus('⚠️', msg || 'Gagal sync, akan dicoba lagi', '#f44336');
+                        syncTimer = setTimeout(pushToServer, 8000);
+                        resolve();
+                    }
+                }
+
+                iframe.onload = () => finish(true);
+                let timeout = setTimeout(() => finish(false, 'Gagal sync: timeout'), 15000);
+                iframe.onload = () => { clearTimeout(timeout); finish(true); };
+
+                form.submit();
+            });
         }
 
         function manualSync() { pullFromServer(); }
