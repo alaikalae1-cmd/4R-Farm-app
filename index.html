@@ -330,6 +330,8 @@
         let syncTimer = null;
         let isSyncing = false;
         let isOnline = navigator.onLine;
+        let hasPendingChanges = false; // true kalau ada perubahan lokal yang belum selesai dikirim ke server
+        let pendingChangeVersion = 0; // increment tiap ada input baru, dipakai deteksi perubahan susulan saat push berjalan
 
         function setSyncStatus(icon, text, color) {
             let iconEl = document.getElementById('sync-icon'), textEl = document.getElementById('sync-text');
@@ -352,6 +354,7 @@
             return new Promise((resolve) => {
                 if (!isApiConfigured()) { setSyncStatus('⚠️', 'Belum di-setting (lihat panduan)', '#f44336'); resolve(); return; }
                 if (!navigator.onLine) { setSyncStatus('📴', 'Offline - pakai data lokal', '#FF9800'); resolve(); return; }
+                if (hasPendingChanges) { resolve(); return; } // ada perubahan lokal belum sync, jangan timpa dulu
                 if (!silent) setSyncStatus('🔄', 'Mengambil data terbaru...');
                 let cbName = 'jsonp_cb_' + Date.now();
                 let script = document.createElement('script');
@@ -368,6 +371,7 @@
                 window[cbName] = function(json) {
                     cleanup();
                     try {
+                        if (hasPendingChanges) { resolve(); return; } // dobel proteksi: cek lagi setelah data balik
                         if (!json.ok) throw new Error(json.error || 'Gagal mengambil data');
                         let d = json.data;
                         dataProduksi = d.produksi || [];
@@ -395,6 +399,8 @@
         // Kirim seluruh data lokal ke server (debounced supaya tidak spam saat input cepat)
         function queueSync() {
             persistLocalOnly();
+            hasPendingChanges = true;
+            pendingChangeVersion++;
             if (!isApiConfigured()) { setSyncStatus('⚠️', 'Belum di-setting (lihat panduan)', '#f44336'); return; }
             setSyncStatus('💾', 'Menyimpan perubahan...', '#FF9800');
             if (syncTimer) clearTimeout(syncTimer);
@@ -408,6 +414,7 @@
                 if (!isApiConfigured() || isSyncing) { resolve(); return; }
                 if (!navigator.onLine) { setSyncStatus('📴', 'Offline - akan sync saat online lagi', '#FF9800'); resolve(); return; }
                 isSyncing = true;
+                let versionAtStart = pendingChangeVersion;
                 setSyncStatus('🔄', 'Sinkronisasi ke server...');
                 let payload = { produksi: dataProduksi, pemasukan: dataPemasukan, pengeluaran: dataPengeluaran, po: dataPO, populasi: populasi, harga: harga, stokAwal: stokAwal };
 
@@ -437,9 +444,17 @@
                     if (form.parentNode) form.parentNode.removeChild(form);
                     setTimeout(() => { if (iframe.parentNode) iframe.parentNode.removeChild(iframe); }, 3000);
                     if (success) {
-                        // Verifikasi beneran tersimpan dengan menarik ulang data dari server
-                        setSyncStatus('🔄', 'Memverifikasi...', '#FF9800');
-                        setTimeout(() => { pullFromServer(true).then(resolve); }, 1200);
+                        if (pendingChangeVersion === versionAtStart) {
+                            // Tidak ada perubahan baru selama push berjalan -> aman untuk clear flag & verifikasi
+                            hasPendingChanges = false;
+                            setSyncStatus('🔄', 'Memverifikasi...', '#FF9800');
+                            setTimeout(() => { pullFromServer(true).then(resolve); }, 1200);
+                        } else {
+                            // Ada input baru masuk saat push tadi berjalan -> langsung push lagi, jangan pull dulu
+                            setSyncStatus('💾', 'Ada perubahan baru, sync ulang...', '#FF9800');
+                            syncTimer = setTimeout(pushToServer, 500);
+                            resolve();
+                        }
                     } else {
                         setSyncStatus('⚠️', msg || 'Gagal sync, akan dicoba lagi', '#f44336');
                         syncTimer = setTimeout(pushToServer, 8000);
