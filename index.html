@@ -496,6 +496,38 @@
             let totalGiftElba = dataPemasukan.filter(p => p.tipe === 'gift' && p.jenis === 'elba').reduce((s,p) => s + p.jumlahButir, 0);
             return { horn: Math.max(0, stokAwal.horn + totalProdHorn - totalJualHorn - totalGiftHorn), elba: Math.max(0, stokAwal.elba + totalProdElba - totalJualElba - totalGiftElba) };
         }
+
+        // Rata-rata produksi telur LAYAK JUAL per hari, dihitung dari data produksi 7 hari terakhir (rolling average).
+        // Dipakai untuk estimasi berapa hari lagi PO yang stoknya masih kurang bisa terpenuhi.
+        function hitungRataProduksiHarian() {
+            let today = new Date();
+            let batas = new Date(today); batas.setDate(batas.getDate() - 7);
+            let perTgl = new Map(); // tanggal -> {horn, elba}
+            dataProduksi.forEach(p => {
+                let tglObj = new Date(p.tanggal);
+                if (tglObj < batas) return;
+                if (!perTgl.has(p.tanggal)) perTgl.set(p.tanggal, { horn: 0, elba: 0 });
+                let d = perTgl.get(p.tanggal);
+                d.horn += Math.max(0, (p.hornTotal||0) - (p.hornTidak||0));
+                d.elba += Math.max(0, (p.elbaTotal||0) - (p.elbaTidak||0));
+            });
+            let hariCount = perTgl.size;
+            if (hariCount === 0) return { horn: 0, elba: 0, hariData: 0 };
+            let totalHorn = 0, totalElba = 0;
+            for (let [, v] of perTgl) { totalHorn += v.horn; totalElba += v.elba; }
+            return { horn: totalHorn / hariCount, elba: totalElba / hariCount, hariData: hariCount };
+        }
+
+        // Estimasi teks "berapa hari lagi" berdasarkan kekurangan stok dan rata-rata produksi harian.
+        // rataHarian dikurangi dulu dengan perkiraan penjualan non-PO harian tidak dihitung (disederhanakan: asumsi semua produksi baru masuk ke stok bebas)
+        function estimasiHariPO(kekuranganButir, rataHarianJenis, hariData) {
+            if (kekuranganButir <= 0) return null;
+            if (hariData === 0 || rataHarianJenis <= 0) return 'Belum ada cukup data produksi untuk estimasi';
+            let hari = Math.ceil(kekuranganButir / rataHarianJenis);
+            if (hari <= 0) return null;
+            if (hari === 1) return '⏳ Estimasi terpenuhi: ~1 hari lagi';
+            return `⏳ Estimasi terpenuhi: ~${hari} hari lagi`;
+        }
         function updateStokDisplay() { let stok = hitungStok(); document.getElementById('stok-horn').innerText = stok.horn; document.getElementById('stok-elba').innerText = stok.elba; return stok; }
         function setStokAwal() { stokAwal.horn = parseInt(document.getElementById('stok-awal-horn').value)||0; stokAwal.elba = parseInt(document.getElementById('stok-awal-elba').value)||0; queueSync(); updateStokDisplay(); updateDashboard(); alert('Stok awal disimpan!'); }
 
@@ -603,16 +635,24 @@
             let stok = hitungStok();
             let stokSisaHorn = stok.horn;
             let stokSisaElba = stok.elba;
+            let rata = hitungRataProduksiHarian();
             let activePO = dataPO.filter(p => p.status === 'active').sort((a,b) => a.id - b.id);
             let container = document.getElementById('po-list');
             if(activePO.length === 0){ container.innerHTML = '<div class="info-box" style="text-align:center;">Belum ada PO aktif</div>'; } else {
                 let html = '';
                 activePO.forEach(po => {
                     let stokCukup = false;
-                    if(po.jenis === 'horn') { stokCukup = po.jumlahButir <= stokSisaHorn; if(stokCukup) stokSisaHorn -= po.jumlahButir; } 
-                    else { stokCukup = po.jumlahButir <= stokSisaElba; if(stokCukup) stokSisaElba -= po.jumlahButir; }
+                    let kekurangan = 0;
+                    if(po.jenis === 'horn') { stokCukup = po.jumlahButir <= stokSisaHorn; if(stokCukup) stokSisaHorn -= po.jumlahButir; else { kekurangan = po.jumlahButir - stokSisaHorn; stokSisaHorn = 0; } }
+                    else { stokCukup = po.jumlahButir <= stokSisaElba; if(stokCukup) stokSisaElba -= po.jumlahButir; else { kekurangan = po.jumlahButir - stokSisaElba; stokSisaElba = 0; } }
                     let stokInfo = stokCukup ? '✅ Stok cukup!' : '⚠️ Stok kurang (tunggu PO sebelumnya)';
-                    html += `<div class="po-item"><div class="po-info"><div class="nama">📋 ${po.nama}</div><div class="detail">${po.jenis === 'horn' ? '🐔 Horn' : '🐔 Elba'} | ${po.jumlah} ${po.satuan === 'butir' ? 'butir' : 'pack'} (${po.jumlahButir} butir)</div><div class="po-status">${po.lunas ? '<span class="status-lunas">✅ Lunas</span>' : '<span class="status-belum">💰 Belum bayar</span>'}</div><div class="po-status">📅 PO: ${po.tanggal} ${po.jam}</div><div class="po-status ${stokCukup ? 'stok-cukup' : 'stok-kurang'}">${stokInfo}</div></div><div class="po-actions"><button class="small success" onclick="realisasiPO(${po.id})" ${!stokCukup ? 'disabled style="opacity:0.5;"' : ''}>✓ Realisasi</button><button class="small danger" onclick="hapusPO(${po.id})">🗑️ Hapus</button></div></div>`;
+                    let estimasiInfo = '';
+                    if (!stokCukup) {
+                        let rataJenis = po.jenis === 'horn' ? rata.horn : rata.elba;
+                        let est = estimasiHariPO(kekurangan, rataJenis, rata.hariData);
+                        if (est) estimasiInfo = `<div class="po-status" style="color:#FF9800;">${est}</div>`;
+                    }
+                    html += `<div class="po-item"><div class="po-info"><div class="nama">📋 ${po.nama}</div><div class="detail">${po.jenis === 'horn' ? '🐔 Horn' : '🐔 Elba'} | ${po.jumlah} ${po.satuan === 'butir' ? 'butir' : 'pack'} (${po.jumlahButir} butir)</div><div class="po-status">${po.lunas ? '<span class="status-lunas">✅ Lunas</span>' : '<span class="status-belum">💰 Belum bayar</span>'}</div><div class="po-status">📅 PO: ${po.tanggal} ${po.jam}</div><div class="po-status ${stokCukup ? 'stok-cukup' : 'stok-kurang'}">${stokInfo}</div>${estimasiInfo}</div><div class="po-actions"><button class="small success" onclick="realisasiPO(${po.id})" ${!stokCukup ? 'disabled style="opacity:0.5;"' : ''}>✓ Realisasi</button><button class="small danger" onclick="hapusPO(${po.id})">🗑️ Hapus</button></div></div>`;
                 });
                 container.innerHTML = html;
             }
@@ -629,16 +669,24 @@
             let stok = hitungStok();
             let stokSisaHorn = stok.horn;
             let stokSisaElba = stok.elba;
+            let rata = hitungRataProduksiHarian();
             let activePO = dataPO.filter(p => p.status === 'active').sort((a,b) => a.id - b.id).slice(0,5);
             let container = document.getElementById('po-queue-dashboard');
             if(activePO.length === 0){ container.innerHTML = '<div class="info-box" style="text-align:center;">Belum ada PO</div>'; return; }
             let html = '';
             activePO.forEach((po, idx) => {
                 let stokCukup = false;
-                if(po.jenis === 'horn') { stokCukup = po.jumlahButir <= stokSisaHorn; if(stokCukup) stokSisaHorn -= po.jumlahButir; } 
-                else { stokCukup = po.jumlahButir <= stokSisaElba; if(stokCukup) stokSisaElba -= po.jumlahButir; }
+                let kekurangan = 0;
+                if(po.jenis === 'horn') { stokCukup = po.jumlahButir <= stokSisaHorn; if(stokCukup) stokSisaHorn -= po.jumlahButir; else { kekurangan = po.jumlahButir - stokSisaHorn; stokSisaHorn = 0; } }
+                else { stokCukup = po.jumlahButir <= stokSisaElba; if(stokCukup) stokSisaElba -= po.jumlahButir; else { kekurangan = po.jumlahButir - stokSisaElba; stokSisaElba = 0; } }
                 let stokInfo = stokCukup ? '✅ Stok cukup!' : '⏳ Menunggu stok';
-                html += `<div class="po-item" style="padding:10px;"><div class="po-info"><div class="nama">${idx+1}. ${po.nama}</div><div class="detail">${po.jenis === 'horn' ? '🐔 Horn' : '🐔 Elba'} | ${po.jumlahButir} butir</div><div class="po-status">${po.lunas ? '<span class="status-lunas">✅ Lunas</span>' : '<span class="status-belum">💰 Belum bayar</span>'}</div><div class="po-status ${stokCukup ? 'stok-cukup' : 'stok-kurang'}">${stokInfo}</div></div></div>`;
+                let estimasiInfo = '';
+                if (!stokCukup) {
+                    let rataJenis = po.jenis === 'horn' ? rata.horn : rata.elba;
+                    let est = estimasiHariPO(kekurangan, rataJenis, rata.hariData);
+                    if (est) estimasiInfo = `<div class="po-status" style="color:#FF9800; font-size:11px;">${est}</div>`;
+                }
+                html += `<div class="po-item" style="padding:10px;"><div class="po-info"><div class="nama">${idx+1}. ${po.nama}</div><div class="detail">${po.jenis === 'horn' ? '🐔 Horn' : '🐔 Elba'} | ${po.jumlahButir} butir</div><div class="po-status">${po.lunas ? '<span class="status-lunas">✅ Lunas</span>' : '<span class="status-belum">💰 Belum bayar</span>'}</div><div class="po-status ${stokCukup ? 'stok-cukup' : 'stok-kurang'}">${stokInfo}</div>${estimasiInfo}</div></div>`;
             });
             container.innerHTML = html;
         }
