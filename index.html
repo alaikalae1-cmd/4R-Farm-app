@@ -645,14 +645,14 @@
                     let kekurangan = 0;
                     if(po.jenis === 'horn') { stokCukup = po.jumlahButir <= stokSisaHorn; if(stokCukup) stokSisaHorn -= po.jumlahButir; else { kekurangan = po.jumlahButir - stokSisaHorn; stokSisaHorn = 0; } }
                     else { stokCukup = po.jumlahButir <= stokSisaElba; if(stokCukup) stokSisaElba -= po.jumlahButir; else { kekurangan = po.jumlahButir - stokSisaElba; stokSisaElba = 0; } }
-                    let stokInfo = stokCukup ? '✅ Stok cukup!' : '⚠️ Stok kurang (tunggu PO sebelumnya)';
+                    let stokInfo = stokCukup ? '✅ Stok cukup!' : '';
                     let estimasiInfo = '';
                     if (!stokCukup) {
                         let rataJenis = po.jenis === 'horn' ? rata.horn : rata.elba;
                         let est = estimasiHariPO(kekurangan, rataJenis, rata.hariData);
                         if (est) estimasiInfo = `<div class="po-status" style="color:#FF9800;">${est}</div>`;
                     }
-                    html += `<div class="po-item"><div class="po-info"><div class="nama">📋 ${po.nama}</div><div class="detail">${po.jenis === 'horn' ? '🐔 Horn' : '🐔 Elba'} | ${po.jumlah} ${po.satuan === 'butir' ? 'butir' : 'pack'} (${po.jumlahButir} butir)</div><div class="po-status">${po.lunas ? '<span class="status-lunas">✅ Lunas</span>' : '<span class="status-belum">💰 Belum bayar</span>'}</div><div class="po-status">📅 PO: ${po.tanggal} ${po.jam}</div><div class="po-status ${stokCukup ? 'stok-cukup' : 'stok-kurang'}">${stokInfo}</div>${estimasiInfo}</div><div class="po-actions"><button class="small success" onclick="realisasiPO(${po.id})" ${!stokCukup ? 'disabled style="opacity:0.5;"' : ''}>✓ Realisasi</button><button class="small danger" onclick="hapusPO(${po.id})">🗑️ Hapus</button></div></div>`;
+                    html += `<div class="po-item"><div class="po-info"><div class="nama">📋 ${po.nama}</div><div class="detail">${po.jenis === 'horn' ? '🐔 Horn' : '🐔 Elba'} | ${po.jumlah} ${po.satuan === 'butir' ? 'butir' : 'pack'} (${po.jumlahButir} butir)</div><div class="po-status">${po.lunas ? '<span class="status-lunas">✅ Lunas</span>' : '<span class="status-belum">💰 Belum bayar</span>'}</div><div class="po-status">📅 PO: ${po.tanggal} ${po.jam}</div>${stokCukup ? `<div class="po-status stok-cukup">${stokInfo}</div>` : ''}${estimasiInfo}</div><div class="po-actions"><button class="small success" onclick="realisasiPO(${po.id})" ${!stokCukup ? 'disabled style="opacity:0.5;"' : ''}>✓ Realisasi</button><button class="small danger" onclick="hapusPO(${po.id})">🗑️ Hapus</button></div></div>`;
                 });
                 container.innerHTML = html;
             }
@@ -679,14 +679,14 @@
                 let kekurangan = 0;
                 if(po.jenis === 'horn') { stokCukup = po.jumlahButir <= stokSisaHorn; if(stokCukup) stokSisaHorn -= po.jumlahButir; else { kekurangan = po.jumlahButir - stokSisaHorn; stokSisaHorn = 0; } }
                 else { stokCukup = po.jumlahButir <= stokSisaElba; if(stokCukup) stokSisaElba -= po.jumlahButir; else { kekurangan = po.jumlahButir - stokSisaElba; stokSisaElba = 0; } }
-                let stokInfo = stokCukup ? '✅ Stok cukup!' : '⏳ Menunggu stok';
+                let stokInfo = stokCukup ? '✅ Stok cukup!' : '';
                 let estimasiInfo = '';
                 if (!stokCukup) {
                     let rataJenis = po.jenis === 'horn' ? rata.horn : rata.elba;
                     let est = estimasiHariPO(kekurangan, rataJenis, rata.hariData);
                     if (est) estimasiInfo = `<div class="po-status" style="color:#FF9800; font-size:11px;">${est}</div>`;
                 }
-                html += `<div class="po-item" style="padding:10px;"><div class="po-info"><div class="nama">${idx+1}. ${po.nama}</div><div class="detail">${po.jenis === 'horn' ? '🐔 Horn' : '🐔 Elba'} | ${po.jumlahButir} butir</div><div class="po-status">${po.lunas ? '<span class="status-lunas">✅ Lunas</span>' : '<span class="status-belum">💰 Belum bayar</span>'}</div><div class="po-status ${stokCukup ? 'stok-cukup' : 'stok-kurang'}">${stokInfo}</div>${estimasiInfo}</div></div>`;
+                html += `<div class="po-item" style="padding:10px;"><div class="po-info"><div class="nama">${idx+1}. ${po.nama}</div><div class="detail">${po.jenis === 'horn' ? '🐔 Horn' : '🐔 Elba'} | ${po.jumlahButir} butir</div><div class="po-status">${po.lunas ? '<span class="status-lunas">✅ Lunas</span>' : '<span class="status-belum">💰 Belum bayar</span>'}</div>${stokCukup ? `<div class="po-status stok-cukup">${stokInfo}</div>` : ''}${estimasiInfo}</div></div>`;
             });
             container.innerHTML = html;
         }
