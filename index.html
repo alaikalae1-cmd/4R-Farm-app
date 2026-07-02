@@ -49,7 +49,13 @@
         .list-item { background: #f8f9fa; padding: 14px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid #2E7D32; }
         .list-item-title { font-weight: 700; margin-bottom: 6px; }
         .list-item-detail { font-size: 13px; color: #666; }
-        .po-item { background: #f8f9fa; padding: 14px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid #FF9800; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .po-item { background: #f8f9fa; padding: 10px 12px; border-radius: 10px; margin-bottom: 8px; border-left: 4px solid #FF9800; }
+        .po-item.po-item-flex { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; }
+        .po-header-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px; }
+        .po-header-row .nama { font-weight: 600; font-size: 14px; }
+        button.small.icon-only { padding: 6px 10px; font-size: 13px; }
+        button.small.compact { padding: 6px 10px; font-size: 12px; }
+        .po-meta-row { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: 12px; color: #555; }
         .po-info { flex: 1; }
         .po-info .nama { font-weight: 700; font-size: 16px; }
         .po-info .detail { font-size: 13px; color: #666; margin-top: 4px; }
@@ -91,7 +97,7 @@
         .modal-content { background: white; border-radius: 20px; padding: 24px; width: 90%; max-width: 350px; }
         .modal-content h3 { margin-bottom: 16px; }
         .version-info { text-align: center; margin-top: 8px; font-size: 10px; color: #999; }
-        @media (max-width: 600px) { .stats-grid-4 { grid-template-columns: repeat(2, 1fr); } .po-item { flex-direction: column; align-items: flex-start; } .po-actions { margin-top: 12px; width: 100%; justify-content: flex-end; } }
+        @media (max-width: 600px) { .stats-grid-4 { grid-template-columns: repeat(2, 1fr); } }
     </style>
 </head>
 <body>
@@ -620,7 +626,8 @@
                 let hargaJual = po.jenis === 'horn' ? harga.horn : harga.elba;
                 let total = po.jumlahButir * hargaJual;
                 dataPemasukan.push({ id: Date.now(), tanggal: new Date().toISOString().split('T')[0], tipe: 'jual', jenis: po.jenis, satuan: po.satuan, jumlah: po.jumlah, jumlahButir: po.jumlahButir, harga: hargaJual, total: total, pembeli: po.nama, wa: po.wa || '', dariPO: true });
-                dataPO = dataPO.filter(p => p.id !== id);
+                po.status = 'selesai';
+                po.tanggalSelesai = new Date().toISOString().split('T')[0];
                 savePemasukan(); savePO(); updatePOList(); updateDashboard(); updateRiwayatPemasukan(); updatePelangganList();
                 alert(`PO ${po.nama} selesai! Penjualan tercatat otomatis.`);
             } else {
@@ -641,7 +648,8 @@
             if(po.jumlahButir > stokTersedia){ alert(`Stok tidak mencukupi! Stok tersisa: ${stokTersedia} butir`); closeModalHarga(); return; }
             let total = po.jumlahButir * hargaInput;
             dataPemasukan.push({ id: Date.now(), tanggal: new Date().toISOString().split('T')[0], tipe: 'jual', jenis: po.jenis, satuan: po.satuan, jumlah: po.jumlah, jumlahButir: po.jumlahButir, harga: hargaInput, total: total, pembeli: po.nama, wa: po.wa || '', dariPO: true });
-            dataPO = dataPO.filter(p => p.id !== pendingPOId);
+            po.status = 'selesai';
+            po.tanggalSelesai = new Date().toISOString().split('T')[0];
             savePemasukan(); savePO(); updatePOList(); updateDashboard(); updateRiwayatPemasukan(); updatePelangganList(); closeModalHarga();
             alert(`PO ${po.nama} selesai! Penjualan tercatat otomatis dengan harga Rp ${hargaInput.toLocaleString()}/butir.`);
         }
@@ -675,9 +683,9 @@
                     if (!stokCukup) {
                         let rataJenis = po.jenis === 'horn' ? rata.horn : rata.elba;
                         let est = estimasiHariPO(kekurangan, rataJenis, rata.hariData);
-                        if (est) estimasiInfo = `<div class="po-status" style="color:#FF9800;">${est}</div>`;
+                        if (est) estimasiInfo = `<div style="color:#FF9800; font-size:12px; margin-top:3px;">${est}</div>`;
                     }
-                    html += `<div class="po-item"><div class="po-info"><div class="nama">📋 ${po.nama}</div><div class="detail">${po.jenis === 'horn' ? '🐔 Horn' : '🐔 Elba'} | ${po.jumlah} ${po.satuan === 'butir' ? 'butir' : 'pack'} (${po.jumlahButir} butir)</div><div class="po-status">${po.lunas ? '<span class="status-lunas">✅ Lunas</span>' : '<span class="status-belum">💰 Belum bayar</span>'}</div><div class="po-status">📅 PO: ${po.tanggal} ${po.jam}</div>${stokCukup ? `<div class="po-status stok-cukup">${stokInfo}</div>` : ''}${estimasiInfo}</div><div class="po-actions"><button class="small success" onclick="realisasiPO(${po.id})" ${!stokCukup ? 'disabled style="opacity:0.5;"' : ''}>✓ Realisasi</button><button class="small danger" onclick="hapusPO(${po.id})">🗑️ Hapus</button></div></div>`;
+                    html += `<div class="po-item"><div class="po-header-row"><span class="nama">📋 ${po.nama}</span><span class="po-actions"><button class="small icon-only compact success" onclick="realisasiPO(${po.id})" ${!stokCukup ? 'disabled style="opacity:0.5;"' : ''}>✓ Realisasi</button><button class="small icon-only compact danger" onclick="hapusPO(${po.id})">🗑️</button></span></div><div class="po-meta-row"><span>${po.jenis === 'horn' ? '🐔 Horn' : '🐔 Elba'} ${po.jumlah}${po.satuan === 'butir' ? 'btr' : 'pack'} (${po.jumlahButir}btr)</span><span>${po.lunas ? '<span class="status-lunas">✅ Lunas</span>' : '<span class="status-belum">💰 Belum bayar</span>'}</span><span>📅 ${po.tanggal}</span>${stokCukup ? `<span class="stok-cukup">${stokInfo}</span>` : ''}</div>${estimasiInfo}</div>`;
                 });
                 container.innerHTML = html;
             }
@@ -723,7 +731,7 @@
                     let est = estimasiHariPO(kekurangan, rataJenis, rata.hariData);
                     if (est) estimasiInfo = `<div class="po-status" style="color:#FF9800; font-size:11px;">${est}</div>`;
                 }
-                html += `<div class="po-item" style="padding:10px;"><div class="po-info"><div class="nama">${idx+1}. ${po.nama}</div><div class="detail">${po.jenis === 'horn' ? '🐔 Horn' : '🐔 Elba'} | ${po.jumlahButir} butir</div><div class="po-status">${po.lunas ? '<span class="status-lunas">✅ Lunas</span>' : '<span class="status-belum">💰 Belum bayar</span>'}</div>${stokCukup ? `<div class="po-status stok-cukup">${stokInfo}</div>` : ''}${estimasiInfo}</div></div>`;
+                html += `<div class="po-item" style="padding:8px 10px;"><div class="po-header-row" style="margin-bottom:2px;"><span class="nama" style="font-size:13px;">${idx+1}. ${po.nama}</span></div><div class="po-meta-row"><span>${po.jenis === 'horn' ? '🐔 Horn' : '🐔 Elba'} ${po.jumlahButir}btr</span><span>${po.lunas ? '<span class="status-lunas">✅ Lunas</span>' : '<span class="status-belum">💰 Belum bayar</span>'}</span>${stokCukup ? `<span class="stok-cukup">${stokInfo}</span>` : ''}</div>${estimasiInfo}</div>`;
             });
             container.innerHTML = html;
             if (banner) {
@@ -801,7 +809,7 @@
                 perluFollowUp.forEach(p => {
                     let pesanDefault = `Halo Kak ${p.nama}, stok telur omega 4R Farm sudah siap kalau mau order lagi 🥚`;
                     let link = waLink(p.wa, pesanDefault);
-                    html += `<div class="po-item"><div class="po-info"><div class="nama">⚠️ ${p.nama}</div><div class="detail">Biasanya beli tiap ~${Math.round(p.rataCycle)} hari, sekarang sudah ${p.hariSejakTerakhir} hari</div><div class="po-status">Terakhir beli: ${p.tglTerakhir} | Total: ${formatRupiah(p.totalBelanja)}</div></div>${link ? `<div class="po-actions"><a href="${link}" target="_blank" class="small success" style="text-decoration:none; display:inline-block; text-align:center;">💬 Chat WA</a></div>` : ''}</div>`;
+                    html += `<div class="po-item po-item-flex"><div class="po-info"><div class="nama">⚠️ ${p.nama}</div><div class="detail">Biasanya beli tiap ~${Math.round(p.rataCycle)} hari, sekarang sudah ${p.hariSejakTerakhir} hari</div><div class="po-status">Terakhir beli: ${p.tglTerakhir} | Total: ${formatRupiah(p.totalBelanja)}</div></div>${link ? `<div class="po-actions"><a href="${link}" target="_blank" class="small success" style="text-decoration:none; display:inline-block; text-align:center;">💬 Chat WA</a></div>` : ''}</div>`;
                 });
                 followUpContainer.innerHTML = html;
             }
@@ -821,7 +829,7 @@
                 let statusBadge = p.statusFollowUp === true ? '<span class="status-belum">⚠️ Perlu follow-up</span>' : (p.statusFollowUp === false ? '<span class="status-lunas">✅ Masih normal</span>' : '');
                 let pesanDefault = `Halo Kak ${p.nama}, stok telur omega 4R Farm sudah siap kalau mau order lagi 🥚`;
                 let link = waLink(p.wa, pesanDefault);
-                html += `<div class="po-item"><div class="po-info"><div class="nama">👤 ${p.nama}</div><div class="detail">${p.jumlahTransaksi}x transaksi | ${p.totalButir} butir | ${formatRupiah(p.totalBelanja)}</div><div class="po-status">${cycleInfo}</div><div class="po-status">Terakhir beli: ${p.tglTerakhir} (${p.hariSejakTerakhir} hari lalu)</div><div class="po-status">${statusBadge}</div></div>${link ? `<div class="po-actions"><a href="${link}" target="_blank" class="small success" style="text-decoration:none; display:inline-block; text-align:center;">💬 WA</a></div>` : ''}</div>`;
+                html += `<div class="po-item po-item-flex"><div class="po-info"><div class="nama">👤 ${p.nama}</div><div class="detail">${p.jumlahTransaksi}x transaksi | ${p.totalButir} butir | ${formatRupiah(p.totalBelanja)}</div><div class="po-status">${cycleInfo}</div><div class="po-status">Terakhir beli: ${p.tglTerakhir} (${p.hariSejakTerakhir} hari lalu)</div><div class="po-status">${statusBadge}</div></div>${link ? `<div class="po-actions"><a href="${link}" target="_blank" class="small success" style="text-decoration:none; display:inline-block; text-align:center;">💬 WA</a></div>` : ''}</div>`;
             });
             listContainer.innerHTML = html;
         }
