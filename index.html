@@ -101,6 +101,7 @@
     </style>
 </head>
 <body>
+<datalist id="daftar-nama-pelanggan"></datalist>
     <div class="header">
         <h1>🥚 4R Farm</h1>
         <p>Pencatatan Peternakan Telur | Horn & Kampung</p>
@@ -203,7 +204,7 @@
                 <div class="form-group"><label>Satuan</label><div class="satuan-group"><button type="button" id="btn-butir" class="satuan-btn active" onclick="setSatuan('butir')">BUTIR</button><button type="button" id="btn-pack" class="satuan-btn" onclick="setSatuan('pack')">PACK (1 pack = 10 butir)</button></div></div>
                 <div class="form-group"><label id="label-jumlah">Jumlah (butir)</label><input type="number" id="jual-jumlah" placeholder="Jumlah"></div>
                 <div class="form-group"><label id="label-harga">Harga per butir (Rp)</label><input type="number" id="jual-harga" placeholder="Harga"></div>
-                <div class="form-group"><label>Nama Pembeli <span style="color:#f44336;">*</span></label><input type="text" id="jual-pembeli" placeholder="Nama pembeli"></div>
+                <div class="form-group"><label>Nama Pembeli <span style="color:#f44336;">*</span></label><input type="text" id="jual-pembeli" list="daftar-nama-pelanggan" placeholder="Nama pembeli" oninput="autoFillWA('jual-pembeli','jual-wa')"></div>
                 <div class="form-group"><label>No. WhatsApp (opsional)</label><input type="tel" id="jual-wa" placeholder="Contoh: 081234567890"></div>
                 <div id="stok-warning-jual" class="alert alert-warning hidden">⚠️ Stok tidak mencukupi!</div>
             </div>
@@ -231,7 +232,7 @@
     <!-- PO Tab -->
     <div id="tab-po" class="tab-content hidden">
         <div class="card"><div class="card-title">📋 Input Pre-Order (PO)</div>
-            <div class="form-group"><label>Nama Pembeli</label><input type="text" id="po-nama" placeholder="Nama pembeli"></div>
+            <div class="form-group"><label>Nama Pembeli</label><input type="text" id="po-nama" list="daftar-nama-pelanggan" placeholder="Nama pembeli" oninput="autoFillWA('po-nama','po-wa')"></div>
             <div class="form-group"><label>No. WhatsApp (opsional)</label><input type="tel" id="po-wa" placeholder="Contoh: 081234567890"></div>
             <div class="form-group">
                 <label>Jenis Telur</label>
@@ -261,6 +262,13 @@
         <div class="card"><div class="card-title">👥 Semua Pelanggan</div>
             <div class="form-group"><label>Urutkan</label><select id="pelanggan-sort" onchange="updatePelangganList()"><option value="terlambat">Paling Perlu Follow-Up</option><option value="total">Total Belanja Terbesar</option><option value="terakhir">Terakhir Beli</option><option value="frekuensi">Paling Sering Beli</option></select></div>
             <div id="pelanggan-list" class="riwayat-list"><div class="info-box" style="text-align:center;">Belum ada data pelanggan</div></div>
+        </div>
+        <div class="card"><div class="card-title">🗂️ Database Pelanggan (Kelola Manual)</div>
+            <div class="info-box" style="margin-bottom:12px; font-size:12px; color:#666;">Daftar master nama & WA pelanggan. Edit di sini untuk gabungkan nama ganda atau perbaiki nomor WA yang salah.</div>
+            <div class="form-group"><input type="text" id="pelanggan-master-nama-baru" placeholder="Tambah nama pelanggan baru"></div>
+            <div class="form-group"><input type="tel" id="pelanggan-master-wa-baru" placeholder="No. WhatsApp (opsional)"></div>
+            <button class="small" onclick="tambahPelangganManual()">➕ Tambah Pelanggan</button>
+            <div id="pelanggan-master-list" class="riwayat-list" style="margin-top:12px;"><div class="info-box" style="text-align:center;">Belum ada data</div></div>
         </div>
     </div>
 
@@ -331,11 +339,13 @@
             POPULASI: '4rfarm_populasi',
             HARGA: '4rfarm_harga',
             STOK_AWAL: '4rfarm_stok_awal',
-            PO: '4rfarm_po'
+            PO: '4rfarm_po',
+            PELANGGAN_MASTER: '4rfarm_pelanggan_master'
         };
 
         // ==================== DATA ====================
         let dataProduksi = [], dataPemasukan = [], dataPengeluaran = [], dataPO = [];
+        let dataPelangganMaster = []; // {id, nama, wa, catatan} - database pelanggan jangka panjang
         let populasi = { horn: 6, elba: 32 }, harga = { horn: 2000, elba: 2500 }, stokAwal = { horn: 0, elba: 0 };
         let satuanAktif = 'butir', poSatuanAktif = 'butir';
         let fileDataImport = null;
@@ -348,7 +358,7 @@
 
         // ==================== SYNC ONLINE (Google Apps Script) ====================
         // GANTI URL INI dengan URL Web App hasil deploy Apps Script Bapak
-        const API_URL = 'https://script.google.com/macros/s/AKfycbzIfbMF40XVBCqVPfdK5af3giHQwXSRr0p_hLDvjimVmu6vKPbPjqRIamfDABiXBS00/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzMK3WaSiTcgQwsmTrSOdaJ-etb5Q728yr1cZ8hUjs447ytkw9nIobqO6mHQLIPYDP1/exec';
         const APP_PIN = 'Bismillah'; // Harus PERSIS SAMA dengan APP_PIN di Code.gs
         let syncTimer = null;
         let isSyncing = false;
@@ -401,12 +411,13 @@
                         dataPemasukan = d.pemasukan || [];
                         dataPengeluaran = d.pengeluaran || [];
                         dataPO = d.po || [];
+                        dataPelangganMaster = d.pelangganMaster || [];
                         populasi = d.populasi || populasi;
                         harga = d.harga || harga;
                         stokAwal = d.stokAwal || stokAwal;
                         persistLocalOnly();
                         updateDashboard(); updatePengaturanForm(); updateHargaDisplay(); updateExportStats();
-                        updateRiwayatProduksi(); updateRiwayatPemasukan(); updatePelangganList(); updatePOList(); updateRiwayatPengeluaran();
+                        updateRiwayatProduksi(); updateRiwayatPemasukan(); updatePelangganList(); updatePOList(); updateRiwayatPengeluaran(); updateDatalistPelanggan(); updatePelangganMasterList();
                         setSyncStatus('✅', 'Data terbaru dari server', '#2E7D32');
                     } catch (err) {
                         setSyncStatus('⚠️', 'Gagal ambil data: ' + err.message, '#f44336');
@@ -439,7 +450,7 @@
                 isSyncing = true;
                 let versionAtStart = pendingChangeVersion;
                 setSyncStatus('🔄', 'Sinkronisasi ke server...');
-                let payload = { produksi: dataProduksi, pemasukan: dataPemasukan, pengeluaran: dataPengeluaran, po: dataPO, populasi: populasi, harga: harga, stokAwal: stokAwal };
+                let payload = { produksi: dataProduksi, pemasukan: dataPemasukan, pengeluaran: dataPengeluaran, po: dataPO, populasi: populasi, harga: harga, stokAwal: stokAwal, pelangganMaster: dataPelangganMaster };
 
                 let iframeName = 'sync_frame_' + Date.now();
                 let iframe = document.createElement('iframe');
@@ -511,6 +522,7 @@
             localStorage.setItem(STORAGE_KEYS.POPULASI, JSON.stringify(populasi));
             localStorage.setItem(STORAGE_KEYS.HARGA, JSON.stringify(harga));
             localStorage.setItem(STORAGE_KEYS.STOK_AWAL, JSON.stringify(stokAwal));
+            localStorage.setItem(STORAGE_KEYS.PELANGGAN_MASTER, JSON.stringify(dataPelangganMaster));
         }
 
         window.addEventListener('online', () => { isOnline = true; setSyncStatus('🔄', 'Online lagi, sinkronisasi...'); pushToServer(); });
@@ -617,6 +629,7 @@
             let lunas = document.getElementById('po-lunas').checked;
             if(!nama){ alert('Isi nama pembeli!'); return; }
             if(!jumlahInput || jumlahInput <= 0){ alert('Isi jumlah pesanan!'); return; }
+            nama = upsertPelangganMaster(nama, wa);
             let jumlahButir = poSatuanAktif === 'butir' ? jumlahInput : jumlahInput * 10;
             dataPO.push({ id: Date.now(), tanggal: new Date().toISOString().split('T')[0], jam: new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}), nama: nama, wa: wa, jenis: jenis, satuan: poSatuanAktif, jumlah: jumlahInput, jumlahButir: jumlahButir, lunas: lunas, status: 'active' });
             savePO(); updatePOList(); updateDashboard();
@@ -756,11 +769,103 @@
         // ==================== PELANGGAN ====================
         // Agregasi data penjualan per nama pembeli: total belanja, jumlah transaksi, tanggal-tanggal beli,
         // rata-rata siklus repeat (hari), dan status apakah sudah "telat" dari siklus normalnya.
+        // ==================== MASTER PELANGGAN ====================
+        // Normalisasi nama supaya "budi", "BUDI", " Budi " dianggap orang yang sama.
+        // Hasil: trim spasi berlebih + Title Case (huruf awal tiap kata besar).
+        function normalisasiNama(nama) {
+            if (!nama) return '';
+            return nama.trim().replace(/\s+/g, ' ').toLowerCase().replace(/(^|\s)\S/g, c => c.toUpperCase());
+        }
+
+        // Cari entry pelanggan di master berdasarkan nama (case-insensitive).
+        function cariPelangganMaster(nama) {
+            let namaKey = normalisasiNama(nama).toLowerCase();
+            return dataPelangganMaster.find(p => p.nama.toLowerCase() === namaKey) || null;
+        }
+
+        // Dipanggil setiap kali ada transaksi baru (penjualan/PO) dengan nama pembeli.
+        // Kalau pelanggan belum ada di master, otomatis dibuatkan. Kalau sudah ada dan WA baru diisi
+        // (sebelumnya kosong), WA-nya diupdate. Mengembalikan nama yang sudah dinormalisasi untuk dipakai di transaksi.
+        function upsertPelangganMaster(namaMentah, wa) {
+            let nama = normalisasiNama(namaMentah);
+            if (!nama) return nama;
+            let existing = cariPelangganMaster(nama);
+            if (existing) {
+                if (wa && !existing.wa) existing.wa = wa;
+            } else {
+                dataPelangganMaster.push({ id: Date.now() + Math.floor(Math.random()*1000), nama: nama, wa: wa || '', catatan: '' });
+            }
+            savePelangganMaster();
+            return nama;
+        }
+
+        function savePelangganMaster() { queueSync(); }
+
+        function updateDatalistPelanggan() {
+            let datalist = document.getElementById('daftar-nama-pelanggan');
+            if (!datalist) return;
+            datalist.innerHTML = dataPelangganMaster.map(p => `<option value="${p.nama.replace(/"/g,'&quot;')}">`).join('');
+        }
+
+        // Saat nama dipilih/diketik di field pembeli, auto-isi WA kalau sudah ada di master.
+        function autoFillWA(namaFieldId, waFieldId) {
+            let namaEl = document.getElementById(namaFieldId), waEl = document.getElementById(waFieldId);
+            if (!namaEl || !waEl) return;
+            let match = cariPelangganMaster(namaEl.value);
+            if (match && match.wa && !waEl.value) waEl.value = match.wa;
+        }
+
+
+        function tambahPelangganManual() {
+            let namaEl = document.getElementById('pelanggan-master-nama-baru');
+            let waEl = document.getElementById('pelanggan-master-wa-baru');
+            let nama = namaEl.value.trim();
+            if (!nama) { alert('Isi nama pelanggan!'); return; }
+            let existing = cariPelangganMaster(nama);
+            if (existing) { alert('Nama ini sudah ada di database. Edit langsung di daftar bawah kalau perlu ubah WA.'); return; }
+            upsertPelangganMaster(nama, waEl.value.trim());
+            namaEl.value = ''; waEl.value = '';
+            updatePelangganMasterList(); updateDatalistPelanggan();
+            alert('Pelanggan ditambahkan!');
+        }
+
+        function editWAPelangganMaster(id) {
+            let p = dataPelangganMaster.find(x => x.id === id);
+            if (!p) return;
+            let waBaru = prompt('Edit No. WhatsApp untuk ' + p.nama + ':', p.wa || '');
+            if (waBaru === null) return; // batal
+            p.wa = waBaru.trim();
+            savePelangganMaster(); updatePelangganMasterList(); updatePelangganList();
+        }
+
+        function hapusPelangganMaster(id) {
+            let p = dataPelangganMaster.find(x => x.id === id);
+            if (!p) return;
+            if (!confirm(`Hapus "${p.nama}" dari database pelanggan? (Riwayat transaksi yang sudah ada TIDAK ikut terhapus, hanya datanya di database ini)`)) return;
+            dataPelangganMaster = dataPelangganMaster.filter(x => x.id !== id);
+            savePelangganMaster(); updatePelangganMasterList(); updateDatalistPelanggan();
+        }
+
+        function updatePelangganMasterList() {
+            let container = document.getElementById('pelanggan-master-list');
+            if (!container) return;
+            if (dataPelangganMaster.length === 0) { container.innerHTML = '<div class="info-box" style="text-align:center;">Belum ada data</div>'; return; }
+            let sorted = [...dataPelangganMaster].sort((a,b) => a.nama.localeCompare(b.nama));
+            let html = '';
+            sorted.forEach(p => {
+                html += `<div class="po-item"><div class="po-header-row"><span class="nama">👤 ${p.nama}</span><span class="po-actions"><button class="small icon-only compact" onclick="editWAPelangganMaster(${p.id})">✏️</button><button class="small icon-only compact danger" onclick="hapusPelangganMaster(${p.id})">🗑️</button></span></div><div class="po-meta-row"><span>${p.wa ? '📱 ' + p.wa : 'Belum ada No. WA'}</span></div></div>`;
+            });
+            container.innerHTML = html;
+        }
+
+
         function analisisPelanggan() {
-            let perPembeli = new Map(); // nama -> { transaksi: [{tanggal, total, jumlahButir, jenis}], wa }
+            let perPembeli = new Map(); // nama (dinormalisasi) -> { transaksi: [{tanggal, total, jumlahButir, jenis}], wa }
             dataPemasukan.filter(p => p.tipe === 'jual' && p.pembeli && p.pembeli !== '-').forEach(p => {
-                if (!perPembeli.has(p.pembeli)) perPembeli.set(p.pembeli, { transaksi: [], wa: '' });
-                let d = perPembeli.get(p.pembeli);
+                let namaKey = normalisasiNama(p.pembeli);
+                if (!namaKey) return;
+                if (!perPembeli.has(namaKey)) perPembeli.set(namaKey, { transaksi: [], wa: '' });
+                let d = perPembeli.get(namaKey);
                 d.transaksi.push({ tanggal: p.tanggal, total: p.total, jumlahButir: p.jumlahButir, jenis: p.jenis });
                 if (p.wa) d.wa = p.wa; // simpan WA terbaru yang pernah diisi
             });
@@ -912,6 +1017,7 @@
                 let wa=document.getElementById('jual-wa').value.trim();
                 if(!jumlah||!hargaInput){alert('Isi jumlah dan harga!');return;}
                 if(!pembeli){alert('Nama pembeli wajib!');return;}
+                pembeli = upsertPelangganMaster(pembeli, wa);
                 let jumlahButir=satuanAktif==='butir'?jumlah:jumlah*10, total=jumlah*hargaInput;
                 dataPemasukan.push({id:Date.now(), tanggal:tgl, tipe:'jual', jenis:jenis, satuan:satuanAktif, jumlah:jumlah, jumlahButir:jumlahButir, harga:hargaInput, total:total, pembeli:pembeli, wa:wa});
                 alert('Penjualan berhasil!');
@@ -1011,7 +1117,8 @@
             let hr=localStorage.getItem(STORAGE_KEYS.HARGA); if(hr) harga=JSON.parse(hr);
             let st=localStorage.getItem(STORAGE_KEYS.STOK_AWAL); if(st) stokAwal=JSON.parse(st);
             let po=localStorage.getItem(STORAGE_KEYS.PO); if(po) dataPO=JSON.parse(po);
-            updateDashboard(); updatePengaturanForm(); updateHargaDisplay(); updateExportStats(); updateRiwayatProduksi(); updateRiwayatPemasukan(); updatePelangganList(); updatePOList(); updateRiwayatPengeluaran();
+            let pl=localStorage.getItem(STORAGE_KEYS.PELANGGAN_MASTER); if(pl) dataPelangganMaster=JSON.parse(pl);
+            updateDashboard(); updatePengaturanForm(); updateHargaDisplay(); updateExportStats(); updateRiwayatProduksi(); updateRiwayatPemasukan(); updatePelangganList(); updatePOList(); updateRiwayatPengeluaran(); updateDatalistPelanggan(); updatePelangganMasterList();
             // 2) Lalu tarik data terbaru dari server (siapa tahu istri/suami baru input dari HP lain)
             pullFromServer();
         }
@@ -1263,7 +1370,7 @@
             document.getElementById('file-import').value='';
             document.getElementById('import-preview').classList.add('hidden');
             fileDataImport=null;
-            updatePengaturanForm(); updateHargaDisplay(); updateDashboard(); updateExportStats(); updateRiwayatProduksi(); updateRiwayatPemasukan(); updatePelangganList(); updatePOList(); updateRiwayatPengeluaran();
+            updatePengaturanForm(); updateHargaDisplay(); updateDashboard(); updateExportStats(); updateRiwayatProduksi(); updateRiwayatPemasukan(); updatePelangganList(); updatePOList(); updateRiwayatPengeluaran(); updateDatalistPelanggan(); updatePelangganMasterList();
             alert('Import selesai!');
         }
 
@@ -1281,7 +1388,7 @@
             if(tabName==='export') updateExportStats();
             if(tabName==='produksi') updateRiwayatProduksi();
             if(tabName==='po') updatePOList();
-            if(tabName==='pelanggan') updatePelangganList();
+            if(tabName==='pelanggan') { updatePelangganList(); updatePelangganMasterList(); }
             if(tabName==='pemasukan'){ 
                 document.querySelector('input[value="jual"]').checked=true; 
                 toggleTransaksiJenis(); 
