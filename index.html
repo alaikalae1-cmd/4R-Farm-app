@@ -571,11 +571,10 @@
         // rataHarian dikurangi dulu dengan perkiraan penjualan non-PO harian tidak dihitung (disederhanakan: asumsi semua produksi baru masuk ke stok bebas)
         function estimasiHariPO(kekuranganButir, rataHarianJenis, hariData) {
             if (kekuranganButir <= 0) return null;
-            if (hariData === 0 || rataHarianJenis <= 0) return 'Belum ada cukup data produksi untuk estimasi';
+            if (hariData === 0 || rataHarianJenis <= 0) return `Estimasi : belum ada cukup data, kurang : ${kekuranganButir} butir`;
             let hari = Math.ceil(kekuranganButir / rataHarianJenis);
             if (hari <= 0) return null;
-            if (hari === 1) return '⏳ Estimasi terpenuhi: ~1 hari lagi';
-            return `⏳ Estimasi terpenuhi: ~${hari} hari lagi`;
+            return `⏳ Estimasi : ~${hari} hari, kurang : ${kekuranganButir} butir`;
         }
         function updateStokDisplay() { let stok = hitungStok(); document.getElementById('stok-horn').innerText = stok.horn; document.getElementById('stok-elba').innerText = stok.elba; return stok; }
         function setStokAwal() { stokAwal.horn = parseInt(document.getElementById('stok-awal-horn').value)||0; stokAwal.elba = parseInt(document.getElementById('stok-awal-elba').value)||0; queueSync(); updateStokDisplay(); updateDashboard(); alert('Stok awal disimpan!'); }
