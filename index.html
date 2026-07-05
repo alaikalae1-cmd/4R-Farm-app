@@ -145,8 +145,14 @@
         </div>
         <div class="card"><div class="card-title">📦 Stok Telur Layak Jual</div>
             <div class="stats-grid">
-                <div class="stat-card" style="background:#e8f5e9;"><div class="stat-value" id="stok-horn">0</div><div class="stat-label">Stok Horn (butir)</div></div>
-                <div class="stat-card" style="background:#e8f5e9;"><div class="stat-value" id="stok-elba">0</div><div class="stat-label">Stok Elba (butir)</div></div>
+                <div class="stat-card" style="background:#e8f5e9;">
+                    <div class="stat-value" id="stok-horn">0</div><div class="stat-label">Stok Horn (butir)</div>
+                    <div id="stok-horn-info" style="font-size:11px; color:#666; margin-top:4px;"></div>
+                </div>
+                <div class="stat-card" style="background:#e8f5e9;">
+                    <div class="stat-value" id="stok-elba">0</div><div class="stat-label">Stok Elba (butir)</div>
+                    <div id="stok-elba-info" style="font-size:11px; color:#666; margin-top:4px;"></div>
+                </div>
             </div>
         </div>
         <div id="po-notif-banner"></div>
@@ -203,13 +209,14 @@
                 <div class="form-group">
                     <label>Jenis Telur</label>
                     <div class="jenis-group">
-                        <button type="button" id="jual-btn-horn" class="jenis-btn active" onclick="setJualJenis('horn')">🐔 HORN </button>
-                        <button type="button" id="jual-btn-elba" class="jenis-btn" onclick="setJualJenis('elba')">🐔 ELBA </button>
+                        <button type="button" id="jual-btn-horn" class="jenis-btn active" onclick="setJualJenis('horn')">🐔 HORN</button>
+                        <button type="button" id="jual-btn-elba" class="jenis-btn" onclick="setJualJenis('elba')">🐔 ELBA</button>
                     </div>
                 </div>
                 <div class="form-group"><label>Satuan</label><div class="satuan-group"><button type="button" id="btn-butir" class="satuan-btn active" onclick="setSatuan('butir')">BUTIR</button><button type="button" id="btn-pack" class="satuan-btn" onclick="setSatuan('pack')">PACK (1 pack = 10 butir)</button></div></div>
-                <div class="form-group"><label id="label-jumlah">Jumlah (butir)</label><input type="number" id="jual-jumlah" placeholder="Jumlah"></div>
-                <div class="form-group"><label id="label-harga">Harga per butir (Rp)</label><input type="number" id="jual-harga" placeholder="Harga"></div>
+                <div class="form-group"><label id="label-jumlah">Jumlah (butir)</label><input type="number" id="jual-jumlah" oninput="autoHitungTotalJual()" placeholder="Jumlah"></div>
+                <div class="form-group"><label id="label-harga">Total Harga (Rp)</label><input type="number" id="jual-harga" placeholder="Otomatis, bisa diedit"></div>
+                <div id="jual-harga-info" class="info-box" style="display:none;"></div>
                 <div class="form-group"><label>Nama Pembeli <span style="color:#f44336;">*</span></label><input type="text" id="jual-pembeli" list="daftar-nama-pelanggan" placeholder="Nama pembeli" oninput="autoFillWA('jual-pembeli','jual-wa')"></div>
                 <div class="form-group"><label>No. WhatsApp (opsional)</label><input type="tel" id="jual-wa" placeholder="Contoh: 081234567890"></div>
                 <div id="stok-warning-jual" class="alert alert-warning hidden">⚠️ Stok tidak mencukupi!</div>
@@ -320,7 +327,18 @@
     <!-- Pengaturan Tab -->
     <div id="tab-pengaturan" class="tab-content hidden">
         <div class="card"><div class="card-title">⚙️ Populasi</div><div class="row-2"><div><label>Horn (ekor)</label><input type="number" id="setting-horn-pop"></div><div><label>Elba (ekor)</label><input type="number" id="setting-elba-pop"></div></div><button onclick="simpanPopulasi()">💾 Simpan</button></div>
-        <div class="card"><div class="card-title">💰 Harga Jual</div><div class="row-2"><div><label>Horn (Rp/butir)</label><input type="number" id="setting-horn-price"></div><div><label>Elba (Rp/butir)</label><input type="number" id="setting-elba-price"></div></div><button onclick="simpanHarga()">💾 Simpan</button></div>
+        <div class="card"><div class="card-title">💰 Harga Jual</div>
+            <div class="info-box" style="margin-bottom:12px;">💡 Harga per pack (1 pack = 10 butir). Harga promo berlaku otomatis tiap kelipatan 3 pack.</div>
+            <div class="row-2">
+                <div><label>Horn - 1 pack (Rp)</label><input type="number" id="setting-horn-price"></div>
+                <div><label>Horn - promo per 3 pack (Rp)</label><input type="number" id="setting-horn-price-promo"></div>
+            </div>
+            <div class="row-2" style="margin-top:12px;">
+                <div><label>Elba - 1 pack (Rp)</label><input type="number" id="setting-elba-price"></div>
+                <div><label>Elba - promo per 3 pack (Rp)</label><input type="number" id="setting-elba-price-promo"></div>
+            </div>
+            <button onclick="simpanHarga()" style="margin-top:12px;">💾 Simpan</button>
+        </div>
         <div class="card"><div class="card-title">📦 Stok Awal</div><div class="row-2"><div><label>Stok Horn (butir)</label><input type="number" id="stok-awal-horn" value="0"></div><div><label>Stok Elba (butir)</label><input type="number" id="stok-awal-elba" value="0"></div></div><button onclick="setStokAwal()">Set Stok Awal</button><div class="info-box">💡 Stok awal diisi sekali</div></div>
         <div class="card"><div class="card-title">📁 Backup & Restore</div>
             <input type="file" id="file-import" accept=".json" style="margin-bottom:16px; padding:10px; border:1px solid #ddd; border-radius:12px;">
@@ -331,7 +349,7 @@
     </div>
 
     <!-- Modal Input Harga untuk PO Belum Bayar -->
-    <div id="modal-harga" class="modal"><div class="modal-content"><h3>Input Harga Penjualan</h3><div class="form-group"><label>Harga per butir (Rp)</label><input type="number" id="modal-harga-input" placeholder="Harga jual"></div><div class="row-2" style="margin-top:16px;"><button onclick="closeModalHarga()" style="background:#9e9e9e;">Batal</button><button onclick="konfirmasiRealisasiHarga()" style="background:#2196F3;">Konfirmasi</button></div></div></div>
+    <div id="modal-harga" class="modal"><div class="modal-content"><h3>Input Harga Penjualan</h3><div class="form-group"><label>Total Harga (Rp)</label><input type="number" id="modal-harga-input" placeholder="Total harga jual"></div><div id="modal-harga-info" class="info-box" style="display:none;"></div><div class="row-2" style="margin-top:16px;"><button onclick="closeModalHarga()" style="background:#9e9e9e;">Batal</button><button onclick="konfirmasiRealisasiHarga()" style="background:#2196F3;">Konfirmasi</button></div></div></div>
 
     <script>
         // ==================== VERSION INFO ====================
@@ -353,7 +371,7 @@
         // ==================== DATA ====================
         let dataProduksi = [], dataPemasukan = [], dataPengeluaran = [], dataPO = [];
         let dataPelangganMaster = []; // {id, nama, wa, catatan} - database pelanggan jangka panjang
-        let populasi = { horn: 6, elba: 32 }, harga = { horn: 2000, elba: 2500 }, stokAwal = { horn: 0, elba: 0 };
+        let populasi = { horn: 6, elba: 32 }, harga = { horn: 2000, elba: 2500, hornPackPromo: 60000, elbaPackPromo: 75000, hornPack: 23000, elbaPack: 28000 }, stokAwal = { horn: 0, elba: 0 };
         let satuanAktif = 'butir', poSatuanAktif = 'butir';
         let fileDataImport = null;
         let pendingPOId = null;
@@ -420,7 +438,7 @@
                         dataPO = d.po || [];
                         dataPelangganMaster = d.pelangganMaster || [];
                         populasi = d.populasi || populasi;
-                        harga = d.harga || harga;
+                        harga = Object.assign({}, harga, d.harga || {});
                         stokAwal = d.stokAwal || stokAwal;
                         persistLocalOnly();
                         updateDashboard(); updatePengaturanForm(); updateHargaDisplay(); updateExportStats();
@@ -576,7 +594,21 @@
             if (hari <= 0) return null;
             return `⏳ Estimasi : ~${hari} hari, kurang : ${kekuranganButir} butir`;
         }
-        function updateStokDisplay() { let stok = hitungStok(); document.getElementById('stok-horn').innerText = stok.horn; document.getElementById('stok-elba').innerText = stok.elba; return stok; }
+        function updateStokDisplay() {
+            let stok = hitungStok();
+            document.getElementById('stok-horn').innerText = stok.horn;
+            document.getElementById('stok-elba').innerText = stok.elba;
+            ['horn','elba'].forEach(jenis => {
+                let list = dataPO.filter(p => p.status === 'active' && p.jenis === jenis);
+                let totalPesan = list.reduce((sum,p) => sum + p.jumlahButir, 0);
+                let stokSisa = jenis === 'horn' ? stok.horn : stok.elba;
+                let kurang = Math.max(0, totalPesan - stokSisa);
+                let el = document.getElementById(`stok-${jenis}-info`);
+                if(list.length === 0){ el.innerText = 'Belum ada pesanan'; }
+                else { el.innerHTML = `Pesanan : ${totalPesan} butir${kurang > 0 ? `<div style="color:#f44336;">Kurang : ${kurang} butir</div>` : '<div style="color:#2E7D32;">Stok cukup</div>'}`; }
+            });
+            return stok;
+        }
         function setStokAwal() { stokAwal.horn = parseInt(document.getElementById('stok-awal-horn').value)||0; stokAwal.elba = parseInt(document.getElementById('stok-awal-elba').value)||0; queueSync(); updateStokDisplay(); updateDashboard(); alert('Stok awal disimpan!'); }
 
         // ==================== JENIS TELUR TAP BUTTON ====================
@@ -589,6 +621,7 @@
                 document.getElementById('jual-btn-horn').classList.remove('active');
                 document.getElementById('jual-btn-elba').classList.add('active');
             }
+            autoHitungTotalJual();
         }
         
         function setGiftJenis(jenis) {
@@ -651,31 +684,40 @@
             let stokTersedia = po.jenis === 'horn' ? stok.horn : stok.elba;
             if(po.jumlahButir > stokTersedia){ alert(`Stok tidak mencukupi! Stok tersisa: ${stokTersedia} butir`); return; }
             if(po.lunas){
-                let hargaJual = po.jenis === 'horn' ? harga.horn : harga.elba;
-                let total = po.jumlahButir * hargaJual;
-                dataPemasukan.push({ id: Date.now(), tanggal: new Date().toISOString().split('T')[0], tipe: 'jual', jenis: po.jenis, satuan: po.satuan, jumlah: po.jumlah, jumlahButir: po.jumlahButir, harga: hargaJual, total: total, pembeli: po.nama, wa: po.wa || '', dariPO: true });
+                let total = hitungTotalJual(po.jenis, po.satuan, po.jumlah);
+                let hargaRataRata = po.jumlahButir > 0 ? Math.round(total/po.jumlahButir) : 0;
+                dataPemasukan.push({ id: Date.now(), tanggal: new Date().toISOString().split('T')[0], tipe: 'jual', jenis: po.jenis, satuan: po.satuan, jumlah: po.jumlah, jumlahButir: po.jumlahButir, harga: hargaRataRata, total: total, pembeli: po.nama, wa: po.wa || '', dariPO: true });
                 po.status = 'selesai';
                 po.tanggalSelesai = new Date().toISOString().split('T')[0];
                 savePemasukan(); savePO(); updatePOList(); updateDashboard(); updateRiwayatPemasukan(); updatePelangganList();
                 alert(`PO ${po.nama} selesai! Penjualan tercatat otomatis.`);
             } else {
                 pendingPOId = id;
-                document.getElementById('modal-harga-input').value = po.jenis === 'horn' ? harga.horn : harga.elba;
+                let totalOtomatis = hitungTotalJual(po.jenis, po.satuan, po.jumlah);
+                document.getElementById('modal-harga-input').value = totalOtomatis;
+                let infoEl = document.getElementById('modal-harga-info');
+                if(po.satuan === 'pack' && po.jumlah >= 3){
+                    let kelompokPromo = Math.floor(po.jumlah/3), sisaPack = po.jumlah%3;
+                    infoEl.style.display='block';
+                    infoEl.innerText = `${kelompokPromo} paket promo (3 pack)${sisaPack>0?` + ${sisaPack} pack harga normal`:''}`;
+                } else {
+                    infoEl.style.display='none';
+                }
                 document.getElementById('modal-harga').style.display = 'flex';
             }
         }
 
         function closeModalHarga() { document.getElementById('modal-harga').style.display = 'none'; pendingPOId = null; }
         function konfirmasiRealisasiHarga() {
-            let hargaInput = parseInt(document.getElementById('modal-harga-input').value);
-            if(!hargaInput || hargaInput <= 0){ alert('Isi harga yang valid!'); return; }
+            let totalInput = parseInt(document.getElementById('modal-harga-input').value);
+            if(!totalInput || totalInput <= 0){ alert('Isi harga yang valid!'); return; }
             let po = dataPO.find(p => p.id === pendingPOId);
             if(!po){ closeModalHarga(); return; }
             let stok = hitungStok();
             let stokTersedia = po.jenis === 'horn' ? stok.horn : stok.elba;
             if(po.jumlahButir > stokTersedia){ alert(`Stok tidak mencukupi! Stok tersisa: ${stokTersedia} butir`); closeModalHarga(); return; }
-            let total = po.jumlahButir * hargaInput;
-            dataPemasukan.push({ id: Date.now(), tanggal: new Date().toISOString().split('T')[0], tipe: 'jual', jenis: po.jenis, satuan: po.satuan, jumlah: po.jumlah, jumlahButir: po.jumlahButir, harga: hargaInput, total: total, pembeli: po.nama, wa: po.wa || '', dariPO: true });
+            let hargaRataRata = po.jumlahButir > 0 ? Math.round(totalInput/po.jumlahButir) : 0;
+            dataPemasukan.push({ id: Date.now(), tanggal: new Date().toISOString().split('T')[0], tipe: 'jual', jenis: po.jenis, satuan: po.satuan, jumlah: po.jumlah, jumlahButir: po.jumlahButir, harga: hargaRataRata, total: totalInput, pembeli: po.nama, wa: po.wa || '', dariPO: true });
             po.status = 'selesai';
             po.tanggalSelesai = new Date().toISOString().split('T')[0];
             savePemasukan(); savePO(); updatePOList(); updateDashboard(); updateRiwayatPemasukan(); updatePelangganList(); closeModalHarga();
@@ -1059,10 +1101,33 @@
             satuanAktif=satuan;
             if(satuan==='butir'){
                 let bb=document.getElementById('btn-butir'); if(bb) bb.classList.add('active'); let bp=document.getElementById('btn-pack'); if(bp) bp.classList.remove('active');
-                setText('label-jumlah','Jumlah (butir)'); setText('label-harga','Harga per butir (Rp)');
+                setText('label-jumlah','Jumlah (butir)'); setText('label-harga','Total Harga (Rp)');
             }else{
                 let bb2=document.getElementById('btn-butir'); if(bb2) bb2.classList.remove('active'); let bp2=document.getElementById('btn-pack'); if(bp2) bp2.classList.add('active');
-                setText('label-jumlah','Jumlah (pack)'); setText('label-harga','Harga per pack (Rp)');
+                setText('label-jumlah','Jumlah (pack)'); setText('label-harga','Total Harga (Rp)');
+            }
+            autoHitungTotalJual();
+        }
+
+        // Auto-hitung total harga jual berdasarkan jumlah, jenis, dan satuan yang dipilih di form Penjualan.
+        // Nilai ini otomatis mengisi field Total Harga, tapi tetap bisa ditimpa manual oleh pengguna.
+        function autoHitungTotalJual(){
+            let jumlahEl = document.getElementById('jual-jumlah');
+            let hargaEl = document.getElementById('jual-harga');
+            let infoEl = document.getElementById('jual-harga-info');
+            if(!jumlahEl || !hargaEl) return;
+            let jumlah = parseInt(jumlahEl.value);
+            if(!jumlah || jumlah <= 0){ if(infoEl) infoEl.style.display='none'; return; }
+            let total = hitungTotalJual(jualJenisAktif, satuanAktif, jumlah);
+            hargaEl.value = total;
+            if(infoEl){
+                if(satuanAktif === 'pack' && jumlah >= 3){
+                    let kelompokPromo = Math.floor(jumlah/3), sisaPack = jumlah%3;
+                    infoEl.style.display='block';
+                    infoEl.innerText = `${kelompokPromo} paket promo (3 pack)${sisaPack>0?` + ${sisaPack} pack harga normal`:''}`;
+                } else {
+                    infoEl.style.display='none';
+                }
             }
         }
 
@@ -1073,16 +1138,18 @@
             if(jenisTransaksi==='jual'){
                 let jenis = jualJenisAktif;
                 let jumlah=parseInt(document.getElementById('jual-jumlah').value);
-                let hargaInput=parseInt(document.getElementById('jual-harga').value);
+                let totalInput=parseInt(document.getElementById('jual-harga').value);
                 let pembeli=document.getElementById('jual-pembeli').value.trim();
                 let wa=document.getElementById('jual-wa').value.trim();
-                if(!jumlah||!hargaInput){alert('Isi jumlah dan harga!');return;}
+                if(!jumlah||!totalInput){alert('Isi jumlah dan harga!');return;}
                 if(!pembeli){alert('Nama pembeli wajib!');return;}
                 pembeli = upsertPelangganMaster(pembeli, wa);
-                let jumlahButir=satuanAktif==='butir'?jumlah:jumlah*10, total=jumlah*hargaInput;
-                dataPemasukan.push({id:Date.now(), tanggal:tgl, tipe:'jual', jenis:jenis, satuan:satuanAktif, jumlah:jumlah, jumlahButir:jumlahButir, harga:hargaInput, total:total, pembeli:pembeli, wa:wa});
+                let jumlahButir=satuanAktif==='butir'?jumlah:jumlah*10;
+                let hargaRataRata = jumlahButir > 0 ? Math.round(totalInput/jumlahButir) : 0;
+                dataPemasukan.push({id:Date.now(), tanggal:tgl, tipe:'jual', jenis:jenis, satuan:satuanAktif, jumlah:jumlah, jumlahButir:jumlahButir, harga:hargaRataRata, total:totalInput, pembeli:pembeli, wa:wa});
                 alert('Penjualan berhasil!');
                 document.getElementById('jual-jumlah').value=''; document.getElementById('jual-harga').value=''; document.getElementById('jual-pembeli').value=''; document.getElementById('jual-wa').value='';
+                document.getElementById('jual-harga-info').style.display='none';
             }else if(jenisTransaksi==='gift'){
                 let jenis = giftJenisAktif;
                 let jumlah=parseInt(document.getElementById('gift-jumlah').value);
@@ -1151,20 +1218,37 @@
 
         function simpanPopulasi(){ populasi.horn=parseInt(document.getElementById('setting-horn-pop').value)||0; populasi.elba=parseInt(document.getElementById('setting-elba-pop').value)||0; queueSync(); updateDashboard(); alert('Populasi disimpan!'); }
         function simpanHarga(){ 
-            harga.horn=parseInt(document.getElementById('setting-horn-price').value)||0; 
-            harga.elba=parseInt(document.getElementById('setting-elba-price').value)||0; 
+            harga.hornPack=parseInt(document.getElementById('setting-horn-price').value)||0; 
+            harga.hornPackPromo=parseInt(document.getElementById('setting-horn-price-promo').value)||0; 
+            harga.elbaPack=parseInt(document.getElementById('setting-elba-price').value)||0; 
+            harga.elbaPackPromo=parseInt(document.getElementById('setting-elba-price-promo').value)||0; 
+            harga.horn = Math.round(harga.hornPack/10);
+            harga.elba = Math.round(harga.elbaPack/10);
             queueSync(); 
             updateHargaDisplay(); 
             alert('Harga disimpan!'); 
         }
         function updateHargaDisplay(){ 
-            setText('harga-horn-display', harga.horn); 
-            setText('harga-elba-display', harga.elba); 
-            let sh=document.getElementById('setting-horn-price'); if(sh) sh.value=harga.horn;
-            let se=document.getElementById('setting-elba-price'); if(se) se.value=harga.elba;
-            // Update tampilan tombol jenis
-            let jh=document.getElementById('jual-btn-horn'); if(jh) jh.innerHTML = `🐔 HORN (Rp ${harga.horn})`;
-            let je=document.getElementById('jual-btn-elba'); if(je) je.innerHTML = `🐔 ELBA (Rp ${harga.elba})`;
+            let sh=document.getElementById('setting-horn-price'); if(sh) sh.value=harga.hornPack;
+            let shp=document.getElementById('setting-horn-price-promo'); if(shp) shp.value=harga.hornPackPromo;
+            let se=document.getElementById('setting-elba-price'); if(se) se.value=harga.elbaPack;
+            let sep=document.getElementById('setting-elba-price-promo'); if(sep) sep.value=harga.elbaPackPromo;
+        }
+
+        // Hitung total harga jual dengan skema tiered: tiap kelipatan 3 pack pakai harga promo per 3 pack,
+        // sisanya (bukan kelipatan 3 pack) pakai harga normal per pack. Untuk satuan butir, pakai harga
+        // normal per pack dibagi 10 (harga per butir biasa).
+        function hitungTotalJual(jenis, satuan, jumlah) {
+            let packNormal = jenis === 'horn' ? harga.hornPack : harga.elbaPack;
+            let packPromo = jenis === 'horn' ? harga.hornPackPromo : harga.elbaPackPromo;
+            let hargaButir = jenis === 'horn' ? harga.horn : harga.elba;
+            if (satuan === 'butir') {
+                return Math.round(jumlah * hargaButir);
+            }
+            // satuan pack
+            let kelompokPromo = packPromo > 0 ? Math.floor(jumlah / 3) : 0;
+            let sisaPack = packPromo > 0 ? (jumlah % 3) : jumlah;
+            return (kelompokPromo * packPromo) + (sisaPack * packNormal);
         }
         function updatePengaturanForm(){ let hp=document.getElementById('setting-horn-pop'); if(hp) hp.value=populasi.horn; let ep=document.getElementById('setting-elba-pop'); if(ep) ep.value=populasi.elba; }
         function updateExportStats(){ let pembeliUnik=new Set(dataPemasukan.filter(p=>p.tipe==='jual'&&p.pembeli).map(p=>p.pembeli)); setText('stat-produksi', dataProduksi.length); setText('stat-pemasukan', dataPemasukan.length); setText('stat-pengeluaran', dataPengeluaran.length); setText('stat-pembeli', pembeliUnik.size); }
@@ -1175,7 +1259,7 @@
             let pm=localStorage.getItem(STORAGE_KEYS.PEMASUKAN); if(pm) dataPemasukan=JSON.parse(pm);
             let pg=localStorage.getItem(STORAGE_KEYS.PENGELUARAN); if(pg) dataPengeluaran=JSON.parse(pg);
             let pop=localStorage.getItem(STORAGE_KEYS.POPULASI); if(pop) populasi=JSON.parse(pop);
-            let hr=localStorage.getItem(STORAGE_KEYS.HARGA); if(hr) harga=JSON.parse(hr);
+            let hr=localStorage.getItem(STORAGE_KEYS.HARGA); if(hr) harga=Object.assign({}, harga, JSON.parse(hr));
             let st=localStorage.getItem(STORAGE_KEYS.STOK_AWAL); if(st) stokAwal=JSON.parse(st);
             let po=localStorage.getItem(STORAGE_KEYS.PO); if(po) dataPO=JSON.parse(po);
             let pl=localStorage.getItem(STORAGE_KEYS.PELANGGAN_MASTER); if(pl) dataPelangganMaster=JSON.parse(pl);
