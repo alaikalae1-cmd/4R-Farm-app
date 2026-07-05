@@ -105,6 +105,7 @@
         .version-info { text-align: center; margin-top: 8px; font-size: 10px; color: #999; }
         @media (max-width: 600px) { .stats-grid-4 { grid-template-columns: repeat(2, 1fr); } }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 <datalist id="daftar-nama-pelanggan"></datalist>
@@ -164,7 +165,17 @@
             </div>
         </div>
         <div class="card"><div class="card-title">📉 Evaluasi Telur Tidak Layak</div><div id="evaluasi-container"></div></div>
-        <div class="card"><div class="card-title">📈 Tren Produksi 7 Hari Terakhir</div><div id="trend-chart" class="chart-container"></div></div>
+        <div class="card">
+            <div class="card-title">📈 Tren Produksi</div>
+            <div class="row-2" style="margin-bottom:12px;">
+                <div><label style="font-size:12px; color:#666;">Rentang</label><select id="trend-range" onchange="updateTrendChart()"><option value="7">7 Hari</option><option value="14">14 Hari</option><option value="30">30 Hari</option><option value="all">Semua Waktu</option></select></div>
+                <div><label style="font-size:12px; color:#666;">Tampilan</label><select id="trend-mode" onchange="updateTrendChart()"><option value="jumlah">Jumlah Butir</option><option value="hdp">HDP (%)</option></select></div>
+            </div>
+            <div style="display:flex; gap:16px; margin-bottom:8px; font-size:12px;">
+                <span style="color:#F9A825;">● Horn</span><span style="color:#6A1B9A;">● Elba</span>
+            </div>
+            <div id="trend-chart"></div>
+        </div>
         <div class="card"><div class="card-title">🏆 Top 5 Pembeli Terbanyak</div><div id="top-pembeli"></div></div>
         <div class="card"><div class="card-title">🎁 Konsumsi & Gift</div><div id="gift-summary"></div></div>
     </div>
@@ -244,6 +255,12 @@
 
     <!-- PO Tab -->
     <div id="tab-po" class="tab-content hidden">
+        <div class="card"><div class="card-title" style="border-left-color:#25D366;">💬 Input dari Order WA</div>
+            <div class="info-box" style="margin-bottom:10px;">💡 Copy teks dari layar "Order" WhatsApp Business (nomor + catatan pesanan), paste di sini. Bisa banyak baris sekaligus, 1 order per baris berpasangan (nomor lalu catatannya).</div>
+            <div class="form-group"><label>Paste teks order di sini</label><textarea id="wa-order-paste" rows="6" placeholder="Contoh:&#10;+62 812-9594-7792&#10;Kampung 6 pack, 10/11 Agustus 2026&#10;&#10;+62 857-9030-1819&#10;Horn 3 pack, 7/8 Agustus 2026"></textarea></div>
+            <button onclick="parseWaOrders()" style="background:#25D366;">🔍 Parse Order</button>
+            <div id="wa-order-preview" style="margin-top:14px;"></div>
+        </div>
         <div class="card"><div class="card-title">📋 Input Pre-Order (PO)</div>
             <div class="form-group"><label>Nama Pembeli</label><input type="text" id="po-nama" list="daftar-nama-pelanggan" placeholder="Nama pembeli" oninput="autoFillWA('po-nama','po-wa')"></div>
             <div class="form-group"><label>No. WhatsApp (opsional)</label><input type="tel" id="po-wa" placeholder="Contoh: 081234567890"></div>
@@ -304,13 +321,28 @@
             <div class="form-group"><label>Periode</label><select id="periode-laporan" onchange="loadLaporan()"><option value="minggu">Minggu Ini</option><option value="bulan">Bulan Ini</option><option value="all">Semua Waktu</option></select></div>
             <div id="laporan-container"></div>
         </div>
+        <div class="card"><div class="card-title">📉 Grafik Cash Flow Bulanan</div>
+            <div style="display:flex; gap:16px; margin-bottom:8px; font-size:12px;">
+                <span style="color:#2E7D32;">● Pemasukan</span><span style="color:#f44336;">● Pengeluaran</span><span style="color:#2196F3;">● Laba</span>
+            </div>
+            <div id="cashflow-chart"></div>
+        </div>
+        <div class="card"><div class="card-title">⚖️ Kalkulator Break-Even</div>
+            <div class="info-box" style="margin-bottom:12px;">💡 Menghitung berapa butir telur harus terjual per bulan agar minimal balik modal (biaya tetap + rata-rata biaya pakan/obat bulan berjalan).</div>
+            <div id="breakeven-container"></div>
+        </div>
     </div>
 
     <!-- Produktivitas Tab -->
     <div id="tab-produktivitas" class="tab-content hidden">
         <div class="card"><div class="card-title">📊 Produktivitas Telur</div>
             <div class="form-group"><label>Periode</label><select id="periode-produktivitas" onchange="loadProduktivitas()"><option value="minggu">Minggu Ini</option><option value="bulan">Bulan Ini</option><option value="all">Semua Waktu</option></select></div>
+            <div id="produktivitas-alert"></div>
             <div id="produktivitas-container"></div>
+            <div style="display:flex; gap:16px; margin:16px 0 8px; font-size:12px;">
+                <span style="color:#F9A825;">● Horn</span><span style="color:#6A1B9A;">● Elba</span>
+            </div>
+            <div id="produktivitas-chart"></div>
         </div>
     </div>
 
@@ -340,6 +372,17 @@
             <button onclick="simpanHarga()" style="margin-top:12px;">💾 Simpan</button>
         </div>
         <div class="card"><div class="card-title">📦 Stok Awal</div><div class="row-2"><div><label>Stok Horn (butir)</label><input type="number" id="stok-awal-horn" value="0"></div><div><label>Stok Elba (butir)</label><input type="number" id="stok-awal-elba" value="0"></div></div><button onclick="setStokAwal()">Set Stok Awal</button><div class="info-box">💡 Stok awal diisi sekali</div></div>
+        <div class="card"><div class="card-title">🏦 Biaya Tetap Bulanan</div>
+            <div class="info-box" style="margin-bottom:12px;">💡 Biaya rutin di luar pakan/obat (sewa kandang, listrik, dll) untuk kalkulasi Break-Even.</div>
+            <div class="form-group"><label>Total biaya tetap per bulan (Rp)</label><input type="number" id="setting-biaya-tetap" placeholder="Contoh: 500000"></div>
+            <button onclick="simpanBiayaTetap()">💾 Simpan</button>
+        </div>
+        <div class="card"><div class="card-title">🔬 Sertifikat Lab DHA</div>
+            <div class="info-box" style="margin-bottom:12px;">💡 Link publik sertifikat lab (Google Drive/website) untuk ditampilkan sebagai QR code di nota digital.</div>
+            <div class="form-group"><label>Link sertifikat lab</label><input type="text" id="setting-link-sertifikat" placeholder="https://..."></div>
+            <div class="form-group"><label>Nomor sertifikat (opsional)</label><input type="text" id="setting-nomor-sertifikat" placeholder="Contoh: 1148/UN1/LPPT/TR/2026"></div>
+            <button onclick="simpanSertifikat()">💾 Simpan</button>
+        </div>
         <div class="card"><div class="card-title">📁 Backup & Restore</div>
             <input type="file" id="file-import" accept=".json" style="margin-bottom:16px; padding:10px; border:1px solid #ddd; border-radius:12px;">
             <button onclick="document.getElementById('file-import').click()" style="background:#2196F3; margin-bottom:16px;">📂 Pilih File Backup</button>
@@ -350,6 +393,15 @@
 
     <!-- Modal Input Harga untuk PO Belum Bayar -->
     <div id="modal-harga" class="modal"><div class="modal-content"><h3>Input Harga Penjualan</h3><div class="form-group"><label>Total Harga (Rp)</label><input type="number" id="modal-harga-input" placeholder="Total harga jual"></div><div id="modal-harga-info" class="info-box" style="display:none;"></div><div class="row-2" style="margin-top:16px;"><button onclick="closeModalHarga()" style="background:#9e9e9e;">Batal</button><button onclick="konfirmasiRealisasiHarga()" style="background:#2196F3;">Konfirmasi</button></div></div></div>
+
+    <div id="modal-nota" class="modal"><div class="modal-content" style="max-width:400px;">
+        <h3>🧾 Nota Digital</h3>
+        <div id="nota-canvas-wrap" style="display:flex; justify-content:center; margin:12px 0;"><canvas id="nota-canvas" style="max-width:100%; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.15);"></canvas></div>
+        <div class="row-2" style="margin-top:12px;">
+            <button onclick="closeModalNota()" style="background:#9e9e9e;">Tutup</button>
+            <button onclick="downloadNota()" style="background:#25D366;">⬇️ Simpan Gambar</button>
+        </div>
+    </div></div>
 
     <script>
         // ==================== VERSION INFO ====================
@@ -365,13 +417,17 @@
             HARGA: '4rfarm_harga',
             STOK_AWAL: '4rfarm_stok_awal',
             PO: '4rfarm_po',
-            PELANGGAN_MASTER: '4rfarm_pelanggan_master'
+            PELANGGAN_MASTER: '4rfarm_pelanggan_master',
+            BIAYA_TETAP: '4rfarm_biaya_tetap',
+            SERTIFIKAT_LAB: '4rfarm_sertifikat_lab'
         };
 
         // ==================== DATA ====================
         let dataProduksi = [], dataPemasukan = [], dataPengeluaran = [], dataPO = [];
         let dataPelangganMaster = []; // {id, nama, wa, catatan} - database pelanggan jangka panjang
         let populasi = { horn: 6, elba: 32 }, harga = { horn: 2000, elba: 2500, hornPackPromo: 60000, elbaPackPromo: 75000, hornPack: 23000, elbaPack: 28000 }, stokAwal = { horn: 0, elba: 0 };
+        let biayaTetapBulanan = 0;
+        let sertifikatLab = { link: '', nomor: '' };
         let satuanAktif = 'butir', poSatuanAktif = 'butir';
         let fileDataImport = null;
         let pendingPOId = null;
@@ -440,9 +496,11 @@
                         populasi = d.populasi || populasi;
                         harga = Object.assign({}, harga, d.harga || {});
                         stokAwal = d.stokAwal || stokAwal;
+                        biayaTetapBulanan = d.biayaTetapBulanan !== undefined ? d.biayaTetapBulanan : biayaTetapBulanan;
+                        sertifikatLab = Object.assign({}, sertifikatLab, d.sertifikatLab || {});
                         persistLocalOnly();
                         updateDashboard(); updatePengaturanForm(); updateHargaDisplay(); updateExportStats();
-                        updateRiwayatProduksi(); updateRiwayatPemasukan(); updatePelangganList(); updatePOList(); updateRiwayatPengeluaran(); updateDatalistPelanggan(); updatePelangganMasterList();
+                        updateRiwayatProduksi(); updateRiwayatPemasukan(); updatePelangganList(); updatePOList(); updateRiwayatPengeluaran(); updateDatalistPelanggan(); updatePelangganMasterList(); updateBiayaTetapForm(); updateSertifikatForm();
                         setSyncStatus('✅', 'Data terbaru dari server', '#2E7D32');
                     } catch (err) {
                         setSyncStatus('⚠️', 'Gagal ambil data: ' + err.message, '#f44336');
@@ -475,7 +533,7 @@
                 isSyncing = true;
                 let versionAtStart = pendingChangeVersion;
                 setSyncStatus('🔄', 'Sinkronisasi ke server...');
-                let payload = { produksi: dataProduksi, pemasukan: dataPemasukan, pengeluaran: dataPengeluaran, po: dataPO, populasi: populasi, harga: harga, stokAwal: stokAwal, pelangganMaster: dataPelangganMaster };
+                let payload = { produksi: dataProduksi, pemasukan: dataPemasukan, pengeluaran: dataPengeluaran, po: dataPO, populasi: populasi, harga: harga, stokAwal: stokAwal, pelangganMaster: dataPelangganMaster, biayaTetapBulanan: biayaTetapBulanan, sertifikatLab: sertifikatLab };
 
                 let iframeName = 'sync_frame_' + Date.now();
                 let iframe = document.createElement('iframe');
@@ -548,12 +606,43 @@
             localStorage.setItem(STORAGE_KEYS.HARGA, JSON.stringify(harga));
             localStorage.setItem(STORAGE_KEYS.STOK_AWAL, JSON.stringify(stokAwal));
             localStorage.setItem(STORAGE_KEYS.PELANGGAN_MASTER, JSON.stringify(dataPelangganMaster));
+            localStorage.setItem(STORAGE_KEYS.BIAYA_TETAP, JSON.stringify(biayaTetapBulanan));
+            localStorage.setItem(STORAGE_KEYS.SERTIFIKAT_LAB, JSON.stringify(sertifikatLab));
         }
 
         window.addEventListener('online', () => { isOnline = true; setSyncStatus('🔄', 'Online lagi, sinkronisasi...'); pushToServer(); });
         window.addEventListener('offline', () => { isOnline = false; setSyncStatus('📴', 'Offline - pakai data lokal', '#FF9800'); });
 
         // ==================== STOK ====================
+        // Hitung HDP (Hen Day Production) gabungan dari peta {tanggal: {horn, elba}} produksi.
+        // HDP Horn dan Elba dihitung TERPISAH per hari (produksi breed itu / populasi breed itu),
+        // lalu digabung dengan rata-rata tertimbang populasi. Hari dimana salah satu breed belum
+        // diisi (nilainya 0) tidak menurunkan HDP breed lain, karena masing-masing dihitung sendiri.
+        // Mengembalikan { avgHDP, avgHDPHorn, avgHDPElba, hariDihitung }.
+        function hitungHDPGabungan(perTglMap, filterFn) {
+            let totalHDPHorn = 0, totalHDPElba = 0, hariHorn = 0, hariElba = 0, hariGabungan = 0, totalHDPGabungan = 0;
+            for (let [tgl, val] of perTglMap) {
+                if (filterFn && !filterFn(tgl)) continue;
+                let hdpHorn = populasi.horn > 0 ? (val.horn / populasi.horn * 100) : 0;
+                let hdpElba = populasi.elba > 0 ? (val.elba / populasi.elba * 100) : 0;
+                if (val.horn > 0) { totalHDPHorn += hdpHorn; hariHorn++; }
+                if (val.elba > 0) { totalHDPElba += hdpElba; hariElba++; }
+                if (val.horn > 0 || val.elba > 0) {
+                    // Rata-rata tertimbang populasi untuk HDP gabungan hari itu, hanya dari breed yang ada datanya.
+                    let popIkut = (val.horn > 0 ? populasi.horn : 0) + (val.elba > 0 ? populasi.elba : 0);
+                    let telurIkut = (val.horn > 0 ? val.horn : 0) + (val.elba > 0 ? val.elba : 0);
+                    totalHDPGabungan += popIkut > 0 ? (telurIkut / popIkut * 100) : 0;
+                    hariGabungan++;
+                }
+            }
+            return {
+                avgHDP: hariGabungan > 0 ? (totalHDPGabungan / hariGabungan) : 0,
+                avgHDPHorn: hariHorn > 0 ? (totalHDPHorn / hariHorn) : 0,
+                avgHDPElba: hariElba > 0 ? (totalHDPElba / hariElba) : 0,
+                hariDihitung: hariGabungan
+            };
+        }
+
         function hitungStok() {
             let totalProdHorn = dataProduksi.reduce((s,p) => s + (p.hornTotal - p.hornTidak), 0);
             let totalProdElba = dataProduksi.reduce((s,p) => s + (p.elbaTotal - p.elbaTidak), 0);
@@ -725,6 +814,113 @@
         }
 
         function hapusPO(id) { if(confirm('Hapus PO ini?')){ dataPO = dataPO.filter(p => p.id !== id); savePO(); updatePOList(); updateDashboard(); alert('PO dihapus!'); } }
+
+        // ==================== PARSER INPUT DARI ORDER WA BUSINESS ====================
+        // Menerima teks yang dicopy dari layar "Order" WhatsApp Business (nomor WA + catatan pesanan
+        // dalam format "[Jenis] [jumlah] pack/butir, [tanggal]"), lalu diuraikan jadi draft PO yang bisa
+        // dicek dulu sebelum disimpan ke antrian. Tidak menyimpan otomatis tanpa konfirmasi pengguna.
+        let waOrderDrafts = [];
+
+        function parseWaOrders() {
+            let teks = document.getElementById('wa-order-paste').value;
+            if (!teks || !teks.trim()) { alert('Paste dulu teks order-nya!'); return; }
+            let baris = teks.split('\n').map(b => b.trim()).filter(b => b);
+            let regexNomor = /(\+?\d[\d\s\-]{7,}\d)/;
+            let regexJumlah = /(\d+)\s*(pack|pak|butir|btr)/i;
+            let regexJenis = /(horn|elba|kampung)/i;
+
+            let drafts = [];
+            let nomorSaatIni = null;
+            baris.forEach(b => {
+                let mNomor = b.match(regexNomor);
+                let mJumlah = b.match(regexJumlah);
+                let mJenis = b.match(regexJenis);
+                if (mJumlah && mJenis) {
+                    // Baris ini adalah catatan pesanan
+                    let jumlah = parseInt(mJumlah[1]);
+                    let satuan = /butir|btr/i.test(mJumlah[2]) ? 'butir' : 'pack';
+                    let jenisRaw = mJenis[1].toLowerCase();
+                    let jenis = (jenisRaw === 'horn') ? 'horn' : 'elba'; // elba & kampung dianggap sama
+                    let waNomor = nomorSaatIni ? normalisasiNomorWA(nomorSaatIni) : '';
+                    let namaCocok = waNomor ? dataPelangganMaster.find(p => normalisasiNomorWA(p.wa) === waNomor) : null;
+                    drafts.push({
+                        nama: namaCocok ? namaCocok.nama : (waNomor || 'Pembeli WA'),
+                        wa: waNomor,
+                        jenis: jenis,
+                        satuan: satuan,
+                        jumlah: jumlah,
+                        catatanAsli: b
+                    });
+                    nomorSaatIni = null;
+                } else if (mNomor && !mJumlah) {
+                    // Baris ini kemungkinan nomor telepon
+                    nomorSaatIni = mNomor[1];
+                }
+            });
+
+            if (drafts.length === 0) {
+                document.getElementById('wa-order-preview').innerHTML = '<div class="info-box" style="text-align:center;">Tidak ada order yang terbaca. Pastikan formatnya seperti "Horn 3 pack, 7/8 Agustus 2026" di baris setelah nomor WA.</div>';
+                return;
+            }
+            waOrderDrafts = drafts;
+            renderWaOrderPreview();
+        }
+
+        function normalisasiNomorWA(wa) {
+            if (!wa) return '';
+            let digit = wa.replace(/\D/g, '');
+            if (digit.startsWith('62')) digit = '0' + digit.slice(2);
+            return digit;
+        }
+
+        function renderWaOrderPreview() {
+            let container = document.getElementById('wa-order-preview');
+            if (waOrderDrafts.length === 0) { container.innerHTML = ''; return; }
+            let html = `<div class="info-box" style="margin-bottom:10px;">✅ ${waOrderDrafts.length} order terbaca. Cek dulu sebelum ditambahkan ke antrian PO.</div>`;
+            waOrderDrafts.forEach((d, idx) => {
+                let jenisClass = d.jenis === 'horn' ? 'po-horn' : 'po-elba';
+                let jenisTag = d.jenis === 'horn' ? '<span class="po-jenis-tag-horn">🐔 Horn</span>' : '<span class="po-jenis-tag-elba">🐔 Elba</span>';
+                html += `<div class="po-item ${jenisClass}">
+                    <div class="po-header-row"><span class="nama">${jenisTag} <input type="text" value="${d.nama.replace(/"/g,'&quot;')}" oninput="waOrderDrafts[${idx}].nama=this.value" style="display:inline-block; width:auto; padding:4px 8px; font-size:13px; border-radius:6px;"></span>
+                    <span class="po-actions"><button class="small icon-only compact success" onclick="tambahkanWaOrderDraft(${idx})">✓ Tambahkan</button><button class="small icon-only compact danger" onclick="hapusWaOrderDraft(${idx})">🗑️</button></span></div>
+                    <div class="po-meta-row"><span>${d.jumlah} ${d.satuan === 'butir' ? 'butir' : 'pack'}</span><span>📱 ${d.wa || '(tidak ada nomor)'}</span></div>
+                    <div style="font-size:11px; color:#999; margin-top:3px;">📝 "${d.catatanAsli}"</div>
+                </div>`;
+            });
+            html += `<button onclick="tambahkanSemuaWaOrder()" style="margin-top:10px; background:#25D366;">✓ Tambahkan Semua ke Antrian PO</button>`;
+            container.innerHTML = html;
+        }
+
+        function hapusWaOrderDraft(idx) {
+            waOrderDrafts.splice(idx, 1);
+            renderWaOrderPreview();
+        }
+
+        function tambahkanWaOrderDraft(idx) {
+            let d = waOrderDrafts[idx];
+            if (!d) return;
+            simpanPODariDraft(d);
+            waOrderDrafts.splice(idx, 1);
+            renderWaOrderPreview();
+        }
+
+        function tambahkanSemuaWaOrder() {
+            if (waOrderDrafts.length === 0) return;
+            if (!confirm(`Tambahkan ${waOrderDrafts.length} order ke antrian PO?`)) return;
+            waOrderDrafts.forEach(d => simpanPODariDraft(d));
+            waOrderDrafts = [];
+            renderWaOrderPreview();
+            document.getElementById('wa-order-paste').value = '';
+            alert('Semua order berhasil ditambahkan ke antrian PO!');
+        }
+
+        function simpanPODariDraft(d) {
+            let nama = upsertPelangganMaster(d.nama, d.wa);
+            let jumlahButir = d.satuan === 'butir' ? d.jumlah : d.jumlah * 10;
+            let urutanBaru = Math.max(-1, ...dataPO.filter(p => p.status === 'active' && p.jenis === d.jenis).map(p => p.urutan ?? -1)) + 1;
+            dataPO.push({ id: Date.now() + Math.floor(Math.random()*1000), tanggal: new Date().toISOString().split('T')[0], jam: new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}), nama: nama, wa: d.wa, jenis: d.jenis, satuan: d.satuan, jumlah: d.jumlah, jumlahButir: jumlahButir, lunas: false, status: 'active', urutan: urutanBaru });
+            savePO(); updatePOList(); updateDashboard();
+        }
 
         // Urutan antrian PO per jenis (horn/elba) disimpan lewat field `urutan` (angka, makin kecil makin depan antrian).
         // PO yang belum punya `urutan` akan diberi urutan berdasarkan id (FIFO) saat pertama kali dirender.
@@ -1172,6 +1368,129 @@
 
         function hapusPemasukan(id){ if(confirm('Hapus transaksi ini?')){ dataPemasukan=dataPemasukan.filter(p=>p.id!==id); savePemasukan(); updateDashboard(); updateRiwayatPemasukan(); updatePelangganList(); updateExportStats(); alert('Dihapus!'); } }
 
+        // ==================== NOTA DIGITAL ====================
+        // Membuat nota transaksi berupa gambar (canvas) berisi detail penjualan + QR code
+        // yang mengarah ke link sertifikat lab DHA, supaya pelanggan bisa langsung verifikasi klaim.
+        let notaTransaksiAktif = null;
+
+        function bukaNotaDigital(id) {
+            let p = dataPemasukan.find(x => x.id === id);
+            if (!p || p.tipe !== 'jual') return;
+            notaTransaksiAktif = p;
+            document.getElementById('modal-nota').style.display = 'flex';
+            gambarNota(p);
+        }
+
+        function closeModalNota() {
+            document.getElementById('modal-nota').style.display = 'none';
+            notaTransaksiAktif = null;
+        }
+
+        function gambarNota(p) {
+            let canvas = document.getElementById('nota-canvas');
+            let ctx = canvas.getContext('2d');
+            let W = 600, H = sertifikatLab.link ? 780 : 620;
+            canvas.width = W; canvas.height = H;
+
+            // Background
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+
+            // Header hijau
+            let jenisColor = p.jenis === 'horn' ? '#F9A825' : '#6A1B9A';
+            ctx.fillStyle = '#2E7D32'; ctx.fillRect(0, 0, W, 110);
+            ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center';
+            ctx.font = 'bold 30px Arial'; ctx.fillText('4R Farm', W/2, 50);
+            ctx.font = '16px Arial'; ctx.fillText('Spesialis Telur Omega 3 + DHA', W/2, 78);
+            ctx.font = '13px Arial'; ctx.fillText('Jombang, Jawa Timur', W/2, 98);
+
+            let y = 150;
+            ctx.fillStyle = '#333'; ctx.textAlign = 'left'; ctx.font = 'bold 20px Arial';
+            ctx.fillText('🧾 Nota Penjualan', 30, y); y += 12;
+            ctx.strokeStyle = '#eee'; ctx.beginPath(); ctx.moveTo(30, y+10); ctx.lineTo(W-30, y+10); ctx.stroke(); y += 40;
+
+            ctx.font = '15px Arial'; ctx.fillStyle = '#666';
+            function baris(label, value, valueColor){
+                ctx.fillStyle = '#888'; ctx.font = '13px Arial'; ctx.fillText(label, 30, y);
+                ctx.fillStyle = valueColor || '#222'; ctx.font = 'bold 16px Arial'; ctx.textAlign = 'right'; ctx.fillText(value, W-30, y);
+                ctx.textAlign = 'left';
+                y += 34;
+            }
+            baris('Tanggal', p.tanggal);
+            baris('Pembeli', p.pembeli || '-');
+            baris('Jenis Telur', p.jenis === 'horn' ? '🐔 Horn' : '🐔 Elba', jenisColor);
+            baris('Jumlah', `${p.jumlah} ${p.satuan === 'butir' ? 'butir' : 'pack'} (${p.jumlahButir} butir)`);
+            baris('Total Bayar', formatRupiah(p.total), '#2E7D32');
+
+            y += 10;
+            ctx.strokeStyle = '#eee'; ctx.beginPath(); ctx.moveTo(30, y); ctx.lineTo(W-30, y); ctx.stroke();
+            y += 30;
+
+            // Info sertifikat lab
+            if (sertifikatLab.nomor) {
+                ctx.fillStyle = '#2E7D32'; ctx.font = 'bold 13px Arial'; ctx.textAlign = 'left';
+                ctx.fillText(`✅ Terverifikasi Lab: ${sertifikatLab.nomor}`, 30, y);
+                y += 24;
+            }
+            ctx.fillStyle = '#999'; ctx.font = '12px Arial';
+            ctx.fillText('DHA 2.90% | Omega-3 3.16% | Rasio Omega 6:3 = 4.05:1', 30, y);
+            y += 30;
+
+            if (sertifikatLab.link) {
+                ctx.fillStyle = '#666'; ctx.font = '13px Arial'; ctx.textAlign = 'center';
+                ctx.fillText('📱 Scan untuk lihat sertifikat lab DHA', W/2, y);
+                y += 20;
+                gambarQRKeCanvas(ctx, sertifikatLab.link, W/2 - 75, y, 150);
+            } else {
+                notaSiapDiunduh = true;
+            }
+
+            ctx.fillStyle = '#bbb'; ctx.font = '11px Arial'; ctx.textAlign = 'center';
+            ctx.fillText('Terima kasih telah mempercayai 4R Farm 🙏', W/2, H-20);
+        }
+
+        let notaSiapDiunduh = true;
+
+        // Generate QR code ke elemen tersembunyi lalu gambar hasilnya ke canvas nota.
+        // notaSiapDiunduh dipakai supaya tombol download menunggu QR selesai digambar dulu.
+        function gambarQRKeCanvas(ctx, text, x, y, size) {
+            notaSiapDiunduh = false;
+            let tempId = 'temp-qr-' + Date.now();
+            let tempDiv = document.createElement('div');
+            tempDiv.id = tempId;
+            tempDiv.style.display = 'none';
+            document.body.appendChild(tempDiv);
+            new QRCode(tempDiv, { text: text, width: size, height: size, correctLevel: QRCode.CorrectLevel.M });
+            let cobaGambar = (percobaan) => {
+                let qrCanvas = tempDiv.querySelector('canvas');
+                let qrImg = tempDiv.querySelector('img');
+                if (qrCanvas && qrCanvas.width > 0) {
+                    ctx.drawImage(qrCanvas, x, y, size, size);
+                    notaSiapDiunduh = true;
+                    document.body.removeChild(tempDiv);
+                } else if (qrImg && qrImg.complete && qrImg.naturalWidth > 0) {
+                    ctx.drawImage(qrImg, x, y, size, size);
+                    notaSiapDiunduh = true;
+                    document.body.removeChild(tempDiv);
+                } else if (percobaan < 10) {
+                    setTimeout(() => cobaGambar(percobaan+1), 100);
+                } else {
+                    notaSiapDiunduh = true; // gagal, tapi jangan blokir download selamanya
+                    if (document.body.contains(tempDiv)) document.body.removeChild(tempDiv);
+                }
+            };
+            setTimeout(() => cobaGambar(0), 100);
+        }
+
+        function downloadNota() {
+            if (!notaTransaksiAktif) return;
+            if (!notaSiapDiunduh) { setTimeout(downloadNota, 150); return; }
+            let canvas = document.getElementById('nota-canvas');
+            let link = document.createElement('a');
+            link.download = `Nota_4RFarm_${notaTransaksiAktif.pembeli.replace(/\s+/g,'_')}_${notaTransaksiAktif.tanggal}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
         function updateRiwayatPemasukan(){
             let container=document.getElementById('riwayat-pemasukan');
             if(dataPemasukan.length===0){ container.innerHTML='<div class="info-box" style="text-align:center;">Belum ada data</div>'; return; }
@@ -1181,7 +1500,7 @@
                 if(p.tipe==='jual'){ tipeClass='jual'; tipeText='💰 PENJUALAN'; detailText=`${p.jenis==='horn'?'Horn':'Elba'} | ${p.jumlahButir} butir | ${formatRupiah(p.total)} | ${p.pembeli}`; }
                 else if(p.tipe==='gift'){ tipeClass='gift'; tipeText='🎁 GIFT'; detailText=`${p.jenis==='horn'?'Horn':'Elba'} | ${p.jumlahButir} butir | ke: ${p.penerima}`; }
                 else{ tipeClass='kas'; tipeText='📝 KAS'; detailText=`${formatRupiah(p.nominal)} | ${p.pembeli!=='-'?p.pembeli:''}`; }
-                html+=`<div class="riwayat-item ${tipeClass}"><div class="riwayat-header"><span>${tipeText}</span><span>${p.tanggal}</span></div><div class="riwayat-detail">${detailText}</div><div class="riwayat-actions"><button class="delete-entry" onclick="hapusPemasukan(${p.id})">🗑️ Hapus</button></div></div>`;
+                html+=`<div class="riwayat-item ${tipeClass}"><div class="riwayat-header"><span>${tipeText}</span><span>${p.tanggal}</span></div><div class="riwayat-detail">${detailText}</div><div class="riwayat-actions">${p.tipe==='jual'?`<button class="small" style="background:#25D366;" onclick="bukaNotaDigital(${p.id})">🧾 Nota</button>`:''}<button class="delete-entry" onclick="hapusPemasukan(${p.id})">🗑️ Hapus</button></div></div>`;
             });
             container.innerHTML=html;
         }
@@ -1251,6 +1570,24 @@
             return (kelompokPromo * packPromo) + (sisaPack * packNormal);
         }
         function updatePengaturanForm(){ let hp=document.getElementById('setting-horn-pop'); if(hp) hp.value=populasi.horn; let ep=document.getElementById('setting-elba-pop'); if(ep) ep.value=populasi.elba; }
+
+        function simpanBiayaTetap(){
+            biayaTetapBulanan = parseInt(document.getElementById('setting-biaya-tetap').value)||0;
+            queueSync(); updateBiayaTetapForm();
+            alert('Biaya tetap disimpan!');
+        }
+        function updateBiayaTetapForm(){ let el=document.getElementById('setting-biaya-tetap'); if(el) el.value=biayaTetapBulanan; }
+
+        function simpanSertifikat(){
+            sertifikatLab.link = document.getElementById('setting-link-sertifikat').value.trim();
+            sertifikatLab.nomor = document.getElementById('setting-nomor-sertifikat').value.trim();
+            queueSync(); updateSertifikatForm();
+            alert('Data sertifikat disimpan!');
+        }
+        function updateSertifikatForm(){
+            let l=document.getElementById('setting-link-sertifikat'); if(l) l.value=sertifikatLab.link;
+            let n=document.getElementById('setting-nomor-sertifikat'); if(n) n.value=sertifikatLab.nomor;
+        }
         function updateExportStats(){ let pembeliUnik=new Set(dataPemasukan.filter(p=>p.tipe==='jual'&&p.pembeli).map(p=>p.pembeli)); setText('stat-produksi', dataProduksi.length); setText('stat-pemasukan', dataPemasukan.length); setText('stat-pengeluaran', dataPengeluaran.length); setText('stat-pembeli', pembeliUnik.size); }
 
         function loadAllData(){
@@ -1263,7 +1600,9 @@
             let st=localStorage.getItem(STORAGE_KEYS.STOK_AWAL); if(st) stokAwal=JSON.parse(st);
             let po=localStorage.getItem(STORAGE_KEYS.PO); if(po) dataPO=JSON.parse(po);
             let pl=localStorage.getItem(STORAGE_KEYS.PELANGGAN_MASTER); if(pl) dataPelangganMaster=JSON.parse(pl);
-            updateDashboard(); updatePengaturanForm(); updateHargaDisplay(); updateExportStats(); updateRiwayatProduksi(); updateRiwayatPemasukan(); updatePelangganList(); updatePOList(); updateRiwayatPengeluaran(); updateDatalistPelanggan(); updatePelangganMasterList();
+            let bt=localStorage.getItem(STORAGE_KEYS.BIAYA_TETAP); if(bt) biayaTetapBulanan=JSON.parse(bt);
+            let sl=localStorage.getItem(STORAGE_KEYS.SERTIFIKAT_LAB); if(sl) sertifikatLab=Object.assign({}, sertifikatLab, JSON.parse(sl));
+            updateDashboard(); updatePengaturanForm(); updateBiayaTetapForm(); updateSertifikatForm(); updateHargaDisplay(); updateExportStats(); updateRiwayatProduksi(); updateRiwayatPemasukan(); updatePelangganList(); updatePOList(); updateRiwayatPengeluaran(); updateDatalistPelanggan(); updatePelangganMasterList();
             // 2) Lalu tarik data terbaru dari server (siapa tahu istri/suami baru input dari HP lain)
             pullFromServer();
         }
@@ -1280,9 +1619,8 @@
             if(labaEl){ labaEl.innerText=formatRupiah(laba); if(laba<0) labaEl.classList.add('negative'); else labaEl.classList.remove('negative'); }
             let produksiPerTgl=new Map();
             dataProduksi.forEach(p=>{ if(!produksiPerTgl.has(p.tanggal)) produksiPerTgl.set(p.tanggal,{horn:0,elba:0}); let d=produksiPerTgl.get(p.tanggal); d.horn+=p.hornTotal; d.elba+=p.elbaTotal; });
-            let totalHDP=0, hari=0;
-            for(let[tgl,val] of produksiPerTgl){ if(tgl.startsWith(bulanIni)){ let totalAyam=populasi.horn+populasi.elba; totalHDP+=totalAyam>0?((val.horn+val.elba)/totalAyam*100):0; hari++; } }
-            setText('dash-hdp', (hari>0?(totalHDP/hari).toFixed(1):0)+'%');
+            let hdpResult = hitungHDPGabungan(produksiPerTgl, tgl => tgl.startsWith(bulanIni));
+            setText('dash-hdp', hdpResult.avgHDP.toFixed(1)+'%');
             updateStokDisplay(); updateEvaluasi(); updateTrendChart(); updateTopPembeli(); updateGiftSummary(); updatePOQueueDashboard();
         }
 
@@ -1298,12 +1636,62 @@
         function updateTrendChart(){
             let produksiPerTgl=new Map();
             dataProduksi.forEach(p=>{ if(!produksiPerTgl.has(p.tanggal)) produksiPerTgl.set(p.tanggal,{horn:0,elba:0}); let d=produksiPerTgl.get(p.tanggal); d.horn+=p.hornTotal; d.elba+=p.elbaTotal; });
-            let dates=Array.from(produksiPerTgl.keys()).sort().slice(-7);
             let container=document.getElementById('trend-chart');
-            if(dates.length===0){ container.innerHTML='<div style="text-align:center;color:#999;">Belum ada data</div>'; return; }
-            let html='';
-            dates.forEach(tgl=>{ let val=produksiPerTgl.get(tgl); let total=val.horn+val.elba; let max=populasi.horn+populasi.elba; let persen=max>0?(total/max*100):0; html+=`<div class="chart-bar"><div class="chart-label">${tgl.slice(5)}</div><div class="chart-bar-fill" style="width:${persen}%;"></div><div style="width:50px;text-align:right;">${total}</div></div>`; });
-            container.innerHTML=html;
+            let rangeEl=document.getElementById('trend-range'), modeEl=document.getElementById('trend-mode');
+            let range = rangeEl ? rangeEl.value : '7';
+            let mode = modeEl ? modeEl.value : 'jumlah';
+            let allDates=Array.from(produksiPerTgl.keys()).sort();
+            let dates = range==='all' ? allDates : allDates.slice(-parseInt(range));
+            if(dates.length===0){ container.innerHTML='<div style="text-align:center;color:#999; padding:20px 0;">Belum ada data</div>'; return; }
+
+            // Susun nilai per breed sesuai mode (jumlah butir atau HDP % dihitung terpisah per breed)
+            let hornVals = dates.map(tgl => { let v=produksiPerTgl.get(tgl); return mode==='hdp' ? (populasi.horn>0 ? (v.horn/populasi.horn*100) : 0) : v.horn; });
+            let elbaVals = dates.map(tgl => { let v=produksiPerTgl.get(tgl); return mode==='hdp' ? (populasi.elba>0 ? (v.elba/populasi.elba*100) : 0) : v.elba; });
+
+            let maxVal = Math.max(1, ...hornVals, ...elbaVals);
+            if(mode==='hdp') maxVal = Math.max(maxVal, 100);
+            let w = 320, h = 180, padL = 34, padR = 10, padT = 12, padB = 24;
+            let plotW = w - padL - padR, plotH = h - padT - padB;
+            let n = dates.length;
+            let xStep = n > 1 ? plotW / (n - 1) : 0;
+            let xPos = i => padL + i * xStep;
+            let yPos = v => padT + plotH - (v / maxVal * plotH);
+
+            function buildPath(vals){
+                return vals.map((v,i) => `${i===0?'M':'L'} ${xPos(i).toFixed(1)} ${yPos(v).toFixed(1)}`).join(' ');
+            }
+
+            // Tentukan interval label sumbu-x supaya tidak numpuk: makin banyak titik, makin jarang label ditampilkan.
+            let labelInterval = n <= 8 ? 1 : n <= 16 ? 2 : n <= 31 ? 4 : Math.ceil(n / 8);
+
+            let gridLines = '';
+            for(let g=0; g<=4; g++){
+                let gy = padT + plotH - (g/4*plotH);
+                gridLines += `<line x1="${padL}" y1="${gy}" x2="${w-padR}" y2="${gy}" stroke="#eee" stroke-width="1"/>`;
+                let gval = mode==='hdp' ? Math.round(g/4*maxVal) : Math.round(g/4*maxVal);
+                gridLines += `<text x="${padL-6}" y="${gy+4}" font-size="9" fill="#999" text-anchor="end">${gval}${mode==='hdp'?'%':''}</text>`;
+            }
+
+            let xLabels = '';
+            dates.forEach((tgl,i) => {
+                if(i % labelInterval === 0 || i === n-1){
+                    xLabels += `<text x="${xPos(i).toFixed(1)}" y="${h-6}" font-size="9" fill="#666" text-anchor="middle">${tgl.slice(5)}</text>`;
+                }
+            });
+
+            let hornPath = buildPath(hornVals);
+            let elbaPath = buildPath(elbaVals);
+            let hornDots = hornVals.map((v,i) => `<circle cx="${xPos(i).toFixed(1)}" cy="${yPos(v).toFixed(1)}" r="3" fill="#F9A825"/>`).join('');
+            let elbaDots = elbaVals.map((v,i) => `<circle cx="${xPos(i).toFixed(1)}" cy="${yPos(v).toFixed(1)}" r="3" fill="#6A1B9A"/>`).join('');
+
+            let svg = `<svg viewBox="0 0 ${w} ${h}" style="width:100%; height:auto;" preserveAspectRatio="xMidYMid meet">
+                ${gridLines}
+                <path d="${hornPath}" fill="none" stroke="#F9A825" stroke-width="2.5"/>
+                <path d="${elbaPath}" fill="none" stroke="#6A1B9A" stroke-width="2.5"/>
+                ${hornDots}${elbaDots}
+                ${xLabels}
+            </svg>`;
+            container.innerHTML = svg;
         }
 
         function updateTopPembeli(){
@@ -1342,25 +1730,155 @@
             pKeluar.forEach(p=>{ if(kat[p.kategori]!==undefined) kat[p.kategori]+=p.nominal; });
             let prodPerTgl=new Map();
             prod.forEach(p=>{ if(!prodPerTgl.has(p.tanggal)) prodPerTgl.set(p.tanggal,{horn:0,elba:0}); let d=prodPerTgl.get(p.tanggal); d.horn+=p.hornTotal; d.elba+=p.elbaTotal; });
-            let totalHDP=0;
-            for(let val of prodPerTgl.values()){ let totalAyam=populasi.horn+populasi.elba; totalHDP+=totalAyam>0?((val.horn+val.elba)/totalAyam*100):0; }
-            let avgHDP=prodPerTgl.size>0?(totalHDP/prodPerTgl.size).toFixed(1):0;
+            let avgHDP=hitungHDPGabungan(prodPerTgl).avgHDP.toFixed(1);
             let th=0,thd=0,te=0,ted=0;
             prod.forEach(p=>{ th+=p.hornTotal; thd+=p.hornTidak; te+=p.elbaTotal; ted+=p.elbaTidak; });
             let persenTdkLayak=((thd+ted)/(th+te)*100).toFixed(1);
             let giftData=pMasuk.filter(p=>p.tipe==='gift');
             let totalGift=giftData.reduce((s,g)=>s+g.jumlahButir,0);
+
+            // HPP (Harga Pokok Produksi) per butir: total pengeluaran dibagi total telur LAYAK yang dihasilkan.
+            // Karena pakan/obat/vitamin formulanya sama untuk semua ayam, biaya dialokasikan ke Horn & Elba
+            // secara proporsional berdasarkan POPULASI (bukan produksi), sesuai cara pemberian pakan per ekor.
+            let totalLayakHorn = prod.reduce((s,p)=>s+(p.hornTotal-p.hornTidak),0);
+            let totalLayakElba = prod.reduce((s,p)=>s+(p.elbaTotal-p.elbaTidak),0);
+            let totalPopulasi = populasi.horn + populasi.elba;
+            let porsiHorn = totalPopulasi>0 ? populasi.horn/totalPopulasi : 0;
+            let porsiElba = totalPopulasi>0 ? populasi.elba/totalPopulasi : 0;
+            let biayaHorn = totalPengeluaran * porsiHorn;
+            let biayaElba = totalPengeluaran * porsiElba;
+            let hppHorn = totalLayakHorn>0 ? (biayaHorn/totalLayakHorn) : 0;
+            let hppElba = totalLayakElba>0 ? (biayaElba/totalLayakElba) : 0;
+
+            // Laba per breed: pemasukan penjualan per breed dikurangi alokasi biaya per breed (proporsi populasi).
+            let jualHorn = pMasuk.filter(p=>p.tipe==='jual'&&p.jenis==='horn').reduce((s,p)=>s+p.total,0);
+            let jualElba = pMasuk.filter(p=>p.tipe==='jual'&&p.jenis==='elba').reduce((s,p)=>s+p.total,0);
+            let labaHorn = jualHorn - biayaHorn;
+            let labaElba = jualElba - biayaElba;
+
             document.getElementById('laporan-container').innerHTML=`
                 <div class="summary-list"><div class="summary-item"><span class="summary-label">💰 Total Pemasukan</span><span class="summary-value">${formatRupiah(totalPemasukan)}</span></div>
                 <div class="summary-item"><span class="summary-label">💸 Total Pengeluaran</span><span class="summary-value">${formatRupiah(totalPengeluaran)}</span></div>
                 <div class="summary-item"><span class="summary-label">📈 Laba/Rugi</span><span class="summary-value ${totalPemasukan-totalPengeluaran<0?'negative':''}">${formatRupiah(totalPemasukan-totalPengeluaran)}</span></div>
                 <div class="summary-item"><span class="summary-label">🥚 Rata-rata HDP</span><span class="summary-value">${avgHDP}%</span></div></div>
                 <div class="card-title" style="margin-top:16px;">🎁 Gift</div><div class="stats-grid"><div class="stat-card"><div class="stat-value">${totalGift}</div><div class="stat-label">Total Gift (butir)</div></div></div>
+                <div class="card-title" style="margin-top:16px;">🧮 HPP & Laba per Breed</div>
+                <div class="info-box" style="margin-bottom:10px;">💡 Biaya dialokasikan proporsional berdasarkan populasi (pakan/obat formulanya sama untuk semua ayam).</div>
+                <div class="row-2">
+                    <div style="background:#FFF8E1; border-radius:16px; padding:14px; text-align:center;">
+                        <div style="font-size:12px; color:#666; margin-bottom:4px;">🐔 HORN</div>
+                        <div style="font-size:20px; font-weight:800; color:#F9A825;">${formatRupiah(Math.round(hppHorn))}</div>
+                        <div style="font-size:11px; color:#999;">HPP per butir</div>
+                        <div style="margin-top:8px; font-size:16px; font-weight:700; ${labaHorn<0?'color:#f44336;':'color:#2E7D32;'}">${formatRupiah(Math.round(labaHorn))}</div>
+                        <div style="font-size:11px; color:#999;">Laba periode ini</div>
+                    </div>
+                    <div style="background:#F3E5F5; border-radius:16px; padding:14px; text-align:center;">
+                        <div style="font-size:12px; color:#666; margin-bottom:4px;">🐔 ELBA</div>
+                        <div style="font-size:20px; font-weight:800; color:#6A1B9A;">${formatRupiah(Math.round(hppElba))}</div>
+                        <div style="font-size:11px; color:#999;">HPP per butir</div>
+                        <div style="margin-top:8px; font-size:16px; font-weight:700; ${labaElba<0?'color:#f44336;':'color:#2E7D32;'}">${formatRupiah(Math.round(labaElba))}</div>
+                        <div style="font-size:11px; color:#999;">Laba periode ini</div>
+                    </div>
+                </div>
                 <div class="card-title" style="margin-top:16px;">📊 Pengeluaran</div>
                 <div class="list-item"><strong>🍚 Pakan:</strong> ${formatRupiah(kat.pakan)}</div><div class="list-item"><strong>💊 Obat:</strong> ${formatRupiah(kat.obat)}</div>
                 <div class="list-item"><strong>🔨 Perawatan:</strong> ${formatRupiah(kat.perawatan)}</div><div class="list-item"><strong>📦 Lainnya:</strong> ${formatRupiah(kat.lainnya)}</div>
                 <div class="card-title" style="margin-top:16px;">📉 Tidak Layak</div><div class="list-item">Persentase: <strong>${persenTdkLayak}%</strong></div>
                 ${persenTdkLayak>5?'<div class="alert alert-warning">⚠️ Perlu evaluasi!</div>':'<div class="alert alert-success">✅ Normal (<5%)</div>'}`;
+            updateCashflowChart();
+            updateBreakEven();
+        }
+
+        // Grafik cash flow bulanan (6 bulan terakhir): 3 garis (pemasukan, pengeluaran, laba) per bulan kalender.
+        function updateCashflowChart(){
+            let container = document.getElementById('cashflow-chart');
+            if(!container) return;
+            let now = new Date();
+            let bulanList = [];
+            for(let i=5; i>=0; i--){
+                let d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+                bulanList.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+            }
+            let pemasukanBulanan = bulanList.map(b => dataPemasukan.filter(p=>p.tanggal.startsWith(b)).reduce((s,p)=>s+(p.tipe==='jual'?p.total:(p.tipe==='kas'?p.nominal:0)),0));
+            let pengeluaranBulanan = bulanList.map(b => dataPengeluaran.filter(p=>p.tanggal.startsWith(b)).reduce((s,p)=>s+p.nominal,0));
+            let labaBulanan = bulanList.map((b,i) => pemasukanBulanan[i]-pengeluaranBulanan[i]);
+
+            let semuaAda = pemasukanBulanan.every(v=>v===0) && pengeluaranBulanan.every(v=>v===0);
+            if(semuaAda){ container.innerHTML = '<div style="text-align:center;color:#999; padding:20px 0;">Belum ada data</div>'; return; }
+
+            let maxVal = Math.max(1, ...pemasukanBulanan, ...pengeluaranBulanan, ...labaBulanan.map(Math.abs));
+            let minVal = Math.min(0, ...labaBulanan);
+            let w=320, h=200, padL=50, padR=10, padT=12, padB=28;
+            let plotW=w-padL-padR, plotH=h-padT-padB;
+            let n=bulanList.length;
+            let xStep = n>1 ? plotW/(n-1) : 0;
+            let xPos = i => padL + i*xStep;
+            let range = maxVal - minVal;
+            let yPos = v => padT + plotH - ((v-minVal)/range*plotH);
+
+            function buildPath(vals){ return vals.map((v,i)=>`${i===0?'M':'L'} ${xPos(i).toFixed(1)} ${yPos(v).toFixed(1)}`).join(' '); }
+
+            let gridLines='';
+            for(let g=0; g<=4; g++){
+                let gval = minVal + (g/4*range);
+                let gy = yPos(gval);
+                gridLines += `<line x1="${padL}" y1="${gy.toFixed(1)}" x2="${w-padR}" y2="${gy.toFixed(1)}" stroke="#eee" stroke-width="1"/>`;
+                gridLines += `<text x="${padL-6}" y="${(gy+3).toFixed(1)}" font-size="8" fill="#999" text-anchor="end">${(gval/1000).toFixed(0)}k</text>`;
+            }
+            if(minVal < 0){ let zy = yPos(0); gridLines += `<line x1="${padL}" y1="${zy.toFixed(1)}" x2="${w-padR}" y2="${zy.toFixed(1)}" stroke="#ccc" stroke-width="1" stroke-dasharray="3,3"/>`; }
+
+            let xLabels = bulanList.map((b,i) => `<text x="${xPos(i).toFixed(1)}" y="${h-8}" font-size="9" fill="#666" text-anchor="middle">${b.slice(5)}/${b.slice(2,4)}</text>`).join('');
+
+            let pemasukanPath = buildPath(pemasukanBulanan);
+            let pengeluaranPath = buildPath(pengeluaranBulanan);
+            let labaPath = buildPath(labaBulanan);
+            let dotsFor = (vals, color) => vals.map((v,i) => `<circle cx="${xPos(i).toFixed(1)}" cy="${yPos(v).toFixed(1)}" r="3" fill="${color}"/>`).join('');
+
+            container.innerHTML = `<svg viewBox="0 0 ${w} ${h}" style="width:100%; height:auto;" preserveAspectRatio="xMidYMid meet">
+                ${gridLines}
+                <path d="${pemasukanPath}" fill="none" stroke="#2E7D32" stroke-width="2.5"/>
+                <path d="${pengeluaranPath}" fill="none" stroke="#f44336" stroke-width="2.5"/>
+                <path d="${labaPath}" fill="none" stroke="#2196F3" stroke-width="2.5"/>
+                ${dotsFor(pemasukanBulanan,'#2E7D32')}${dotsFor(pengeluaranBulanan,'#f44336')}${dotsFor(labaBulanan,'#2196F3')}
+                ${xLabels}
+            </svg>`;
+        }
+
+        // Kalkulator Break-Even: berapa butir telur harus terjual per bulan agar menutup biaya tetap + biaya variabel (pakan/obat).
+        // Menggunakan rata-rata harga jual gabungan (tertimbang produksi Horn:Elba) dan biaya variabel rata-rata bulan berjalan.
+        function updateBreakEven(){
+            let container = document.getElementById('breakeven-container');
+            if(!container) return;
+            let now = new Date();
+            let bulanIni = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+            let pengeluaranBulanIni = dataPengeluaran.filter(p=>p.tanggal.startsWith(bulanIni)).reduce((s,p)=>s+p.nominal,0);
+            let biayaVariabel = pengeluaranBulanIni; // pakan/obat/perawatan bulan berjalan (di luar biaya tetap)
+            let totalBiaya = biayaTetapBulanan + biayaVariabel;
+
+            // Harga jual rata-rata per butir (tertimbang porsi produksi Horn:Elba), pakai harga normal (bukan promo)
+            // supaya estimasi break-even konservatif (tidak mengasumsikan semua penjualan dapat promo).
+            let hargaRataHorn = harga.horn, hargaRataElba = harga.elba;
+            let totalLayakHorn = dataProduksi.filter(p=>p.tanggal.startsWith(bulanIni)).reduce((s,p)=>s+(p.hornTotal-p.hornTidak),0);
+            let totalLayakElba = dataProduksi.filter(p=>p.tanggal.startsWith(bulanIni)).reduce((s,p)=>s+(p.elbaTotal-p.elbaTidak),0);
+            let totalLayak = totalLayakHorn + totalLayakElba;
+            let hargaRataGabungan = totalLayak>0 ? ((totalLayakHorn*hargaRataHorn + totalLayakElba*hargaRataElba)/totalLayak) : ((hargaRataHorn+hargaRataElba)/2);
+
+            let butirBEP = hargaRataGabungan>0 ? Math.ceil(totalBiaya/hargaRataGabungan) : 0;
+            let produksiBulanIni = totalLayak;
+            let statusBEP = produksiBulanIni >= butirBEP && butirBEP > 0;
+
+            container.innerHTML = `
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-value">${formatRupiah(totalBiaya)}</div><div class="stat-label">Total Biaya Bulan Ini</div></div>
+                    <div class="stat-card"><div class="stat-value">${formatRupiah(Math.round(hargaRataGabungan))}</div><div class="stat-label">Harga Jual Rata-rata/Butir</div></div>
+                </div>
+                <div style="background:#e3f2fd; border-radius:16px; padding:16px; text-align:center; margin-top:12px;">
+                    <div style="font-size:28px; font-weight:800; color:#2196F3;">${butirBEP.toLocaleString('id-ID')} butir</div>
+                    <div style="font-size:12px; color:#666;">Target minimal terjual per bulan (Break-Even)</div>
+                </div>
+                <div class="list-item" style="margin-top:10px;">📦 Produksi layak bulan ini: <strong>${produksiBulanIni.toLocaleString('id-ID')} butir</strong></div>
+                ${butirBEP>0 ? (statusBEP ? '<div class="alert alert-success">✅ Produksi sudah di atas titik Break-Even bulan ini</div>' : `<div class="alert alert-warning">⚠️ Masih kurang ${(butirBEP-produksiBulanIni).toLocaleString('id-ID')} butir dari target Break-Even</div>`) : '<div class="info-box">💡 Isi Biaya Tetap Bulanan di Setting untuk hasil lebih akurat</div>'}
+            `;
         }
 
         // ==================== PRODUKTIVITAS ====================
@@ -1377,17 +1895,51 @@
             for(let d of perTgl.values()){ totalHorn+=d.hornTotal; hornTdk+=d.hornTidak; totalElba+=d.elbaTotal; elbaTdk+=d.elbaTidak; }
             let persenHorn=totalHorn>0?(hornTdk/totalHorn*100).toFixed(1):0;
             let persenElba=totalElba>0?(elbaTdk/totalElba*100).toFixed(1):0;
-            let totalHDP=0;
-            for(let d of perTgl.values()){ let totalAyam=populasi.horn+populasi.elba; let totalTelur=d.hornTotal+d.elbaTotal; totalHDP+=totalAyam>0?(totalTelur/totalAyam*100):0; }
-            let avgHDP=perTgl.size>0?(totalHDP/perTgl.size).toFixed(1):0;
-            let hdpHorn=0, hdpElba=0;
-            for(let d of perTgl.values()){ if(populasi.horn>0) hdpHorn+=d.hornTotal/populasi.horn*100; if(populasi.elba>0) hdpElba+=d.elbaTotal/populasi.elba*100; }
-            let avgHDPHorn=perTgl.size>0?(hdpHorn/perTgl.size).toFixed(1):0;
-            let avgHDPElba=perTgl.size>0?(hdpElba/perTgl.size).toFixed(1):0;
+            let perTglSimple=new Map();
+            for(let [tgl,d] of perTgl){ perTglSimple.set(tgl, {horn:d.hornTotal, elba:d.elbaTotal}); }
+            let hdpResult=hitungHDPGabungan(perTglSimple);
+            let avgHDP=hdpResult.avgHDP.toFixed(1);
+            let avgHDPHorn=hdpResult.avgHDPHorn.toFixed(1);
+            let avgHDPElba=hdpResult.avgHDPElba.toFixed(1);
             let dates=Array.from(perTgl.keys()).sort();
-            let last7=dates.slice(-7);
-            let chartHtml='<div style="margin:20px 0"><strong>📈 Tren HDP Harian (7 hari terakhir)</strong></div>';
-            last7.forEach(tgl=>{ let d=perTgl.get(tgl); let totalTelur=d.hornTotal+d.elbaTotal; let totalAyam=populasi.horn+populasi.elba; let hdp=totalAyam>0?(totalTelur/totalAyam*100):0; chartHtml+=`<div class="chart-bar"><div class="chart-label">${tgl.slice(5)}</div><div class="chart-bar-fill" style="width:${hdp}%; background:#2E7D32;"></div><div style="width:50px;text-align:right;">${hdp.toFixed(1)}%</div></div>`; });
+
+            // ===== Perbandingan periode: HDP periode ini vs periode sebelumnya (durasi sama, geser ke belakang) =====
+            let perbandinganHtml = '';
+            if(periode !== 'all' && dates.length > 0){
+                let awalIni = new Date(dates[0]);
+                let akhirIni = new Date(dates[dates.length-1]);
+                let durasiHari = Math.max(1, Math.round((akhirIni-awalIni)/86400000)+1);
+                let awalSebelum = new Date(awalIni); awalSebelum.setDate(awalSebelum.getDate()-durasiHari);
+                let akhirSebelum = new Date(awalIni); akhirSebelum.setDate(akhirSebelum.getDate()-1);
+                let awalSebelumStr = awalSebelum.toISOString().split('T')[0], akhirSebelumStr = akhirSebelum.toISOString().split('T')[0];
+                let prodSebelum = dataProduksi.filter(p => p.tanggal >= awalSebelumStr && p.tanggal <= akhirSebelumStr);
+                let perTglSebelum = new Map();
+                prodSebelum.forEach(p=>{ if(!perTglSebelum.has(p.tanggal)) perTglSebelum.set(p.tanggal,{horn:0,elba:0}); let d=perTglSebelum.get(p.tanggal); d.horn+=p.hornTotal; d.elba+=p.elbaTotal; });
+                let hdpSebelum = hitungHDPGabungan(perTglSebelum).avgHDP;
+                if(hdpSebelum > 0){
+                    let selisih = avgHDP - hdpSebelum;
+                    let panah = selisih > 0.5 ? '📈' : (selisih < -0.5 ? '📉' : '➡️');
+                    let warna = selisih > 0.5 ? '#2E7D32' : (selisih < -0.5 ? '#f44336' : '#666');
+                    let labelPeriode = periode === 'minggu' ? '7 hari sebelumnya' : 'periode sebelumnya';
+                    perbandinganHtml = `<div class="list-item">${panah} HDP ${selisih>=0?'naik':'turun'} <strong style="color:${warna};">${Math.abs(selisih).toFixed(1)}%</strong> dibanding ${labelPeriode} (${hdpSebelum.toFixed(1)}%)</div>`;
+                }
+            }
+
+            // ===== Alert dini: bandingkan HDP periode ini terhadap baseline (rata-rata HDP 30 hari terakhir dari SEMUA data) =====
+            let alertHtml = '';
+            let semuaPerTgl = new Map();
+            dataProduksi.forEach(p=>{ if(!semuaPerTgl.has(p.tanggal)) semuaPerTgl.set(p.tanggal,{horn:0,elba:0}); let d=semuaPerTgl.get(p.tanggal); d.horn+=p.hornTotal; d.elba+=p.elbaTotal; });
+            let tanggal30Lalu = new Date(); tanggal30Lalu.setDate(tanggal30Lalu.getDate()-30);
+            let tanggal30LaluStr = tanggal30Lalu.toISOString().split('T')[0];
+            let baselineHDP = hitungHDPGabungan(semuaPerTgl, tgl => tgl >= tanggal30LaluStr).avgHDP;
+            if(baselineHDP > 0 && avgHDP > 0){
+                let dropPercent = ((baselineHDP - avgHDP) / baselineHDP) * 100;
+                if(dropPercent >= 10){
+                    alertHtml = `<div class="alert alert-warning">⚠️ HDP periode ini (${avgHDP}%) turun ${dropPercent.toFixed(0)}% dari rata-rata 30 hari terakhir (${baselineHDP.toFixed(1)}%). Cek kondisi pakan, kesehatan ayam, atau stress lingkungan kandang.</div>`;
+                }
+            }
+            document.getElementById('produktivitas-alert').innerHTML = alertHtml;
+
             document.getElementById('produktivitas-container').innerHTML=`
                 <div class="stats-grid-4">
                     <div class="stat-card"><div class="stat-value">${totalHorn}</div><div class="stat-label">Total Horn (butir)</div></div>
@@ -1401,14 +1953,59 @@
                     <div style="flex:1; background:#f8f9fa; border-radius:16px; padding:16px; text-align:center;"><div style="font-size:28px; font-weight:800; color:${persenHorn<persenElba?'#2E7D32':'#f44336'};">${persenHorn}%</div><div style="font-size:12px; color:#666;">% Tidak Layak Horn</div></div>
                     <div style="flex:1; background:#f8f9fa; border-radius:16px; padding:16px; text-align:center;"><div style="font-size:28px; font-weight:800; color:${persenElba<persenHorn?'#2E7D32':'#f44336'};">${persenElba}%</div><div style="font-size:12px; color:#666;">% Tidak Layak Elba</div></div>
                 </div>
-                ${chartHtml}
                 <div style="margin-top:20px; background:#f8f9fa; border-radius:16px; padding:16px;">
                     <div style="font-weight:700; margin-bottom:12px;">📊 Kesimpulan Produktivitas</div>
                     <div class="list-item">🏆 ${avgHDPHorn>avgHDPElba?'Horn lebih produktif dari Elba':(avgHDPElba>avgHDPHorn?'Elba lebih produktif dari Horn':'Produktivitas Horn dan Elba seimbang')}</div>
                     <div class="list-item">🥚 ${persenHorn<persenElba?`Telur Horn lebih baik (${persenHorn}% tidak layak)`:persenElba<persenHorn?`Telur Elba lebih baik (${persenElba}% tidak layak)`:'Kualitas kedua jenis telur seimbang'}</div>
                     <div class="list-item">📈 ${avgHDP>=70?'Produktivitas baik (HDP >70%)':avgHDP>=60?'Produktivitas cukup (HDP 60-70%)':'Produktivitas perlu ditingkatkan (HDP <60%)'}</div>
+                    ${perbandinganHtml}
                 </div>
             `;
+            renderProduktivitasChart(perTgl);
+        }
+
+        // Line chart HDP harian (Horn & Elba terpisah, 2 warna), dipakai di tab Produktivitas.
+        // Sama gayanya dengan chart Dashboard: sumbu-x otomatis skip label kalau data padat.
+        function renderProduktivitasChart(perTgl){
+            let container = document.getElementById('produktivitas-chart');
+            if(!container) return;
+            let dates = Array.from(perTgl.keys()).sort();
+            if(dates.length===0){ container.innerHTML='<div style="text-align:center;color:#999; padding:20px 0;">Belum ada data</div>'; return; }
+
+            let hornVals = dates.map(tgl => { let d=perTgl.get(tgl); return populasi.horn>0 ? (d.hornTotal/populasi.horn*100) : 0; });
+            let elbaVals = dates.map(tgl => { let d=perTgl.get(tgl); return populasi.elba>0 ? (d.elbaTotal/populasi.elba*100) : 0; });
+
+            let maxVal = Math.max(100, ...hornVals, ...elbaVals);
+            let w=320, h=180, padL=34, padR=10, padT=12, padB=24;
+            let plotW=w-padL-padR, plotH=h-padT-padB;
+            let n=dates.length;
+            let xStep = n>1 ? plotW/(n-1) : 0;
+            let xPos = i => padL + i*xStep;
+            let yPos = v => padT + plotH - (v/maxVal*plotH);
+
+            function buildPath(vals){ return vals.map((v,i)=>`${i===0?'M':'L'} ${xPos(i).toFixed(1)} ${yPos(v).toFixed(1)}`).join(' '); }
+
+            let labelInterval = n<=8?1:n<=16?2:n<=31?4:Math.ceil(n/8);
+            let gridLines='';
+            for(let g=0; g<=4; g++){
+                let gy=padT+plotH-(g/4*plotH);
+                gridLines+=`<line x1="${padL}" y1="${gy}" x2="${w-padR}" y2="${gy}" stroke="#eee" stroke-width="1"/>`;
+                gridLines+=`<text x="${padL-6}" y="${gy+4}" font-size="9" fill="#999" text-anchor="end">${Math.round(g/4*maxVal)}%</text>`;
+            }
+            let xLabels='';
+            dates.forEach((tgl,i)=>{ if(i%labelInterval===0 || i===n-1){ xLabels+=`<text x="${xPos(i).toFixed(1)}" y="${h-6}" font-size="9" fill="#666" text-anchor="middle">${tgl.slice(5)}</text>`; } });
+
+            let hornPath=buildPath(hornVals), elbaPath=buildPath(elbaVals);
+            let hornDots=hornVals.map((v,i)=>`<circle cx="${xPos(i).toFixed(1)}" cy="${yPos(v).toFixed(1)}" r="3" fill="#F9A825"/>`).join('');
+            let elbaDots=elbaVals.map((v,i)=>`<circle cx="${xPos(i).toFixed(1)}" cy="${yPos(v).toFixed(1)}" r="3" fill="#6A1B9A"/>`).join('');
+
+            container.innerHTML = `<svg viewBox="0 0 ${w} ${h}" style="width:100%; height:auto;" preserveAspectRatio="xMidYMid meet">
+                ${gridLines}
+                <path d="${hornPath}" fill="none" stroke="#F9A825" stroke-width="2.5"/>
+                <path d="${elbaPath}" fill="none" stroke="#6A1B9A" stroke-width="2.5"/>
+                ${hornDots}${elbaDots}
+                ${xLabels}
+            </svg>`;
         }
 
         // ==================== EXPORT ====================
@@ -1515,7 +2112,7 @@
             document.getElementById('file-import').value='';
             document.getElementById('import-preview').classList.add('hidden');
             fileDataImport=null;
-            updatePengaturanForm(); updateHargaDisplay(); updateDashboard(); updateExportStats(); updateRiwayatProduksi(); updateRiwayatPemasukan(); updatePelangganList(); updatePOList(); updateRiwayatPengeluaran(); updateDatalistPelanggan(); updatePelangganMasterList();
+            updatePengaturanForm(); updateBiayaTetapForm(); updateSertifikatForm(); updateHargaDisplay(); updateDashboard(); updateExportStats(); updateRiwayatProduksi(); updateRiwayatPemasukan(); updatePelangganList(); updatePOList(); updateRiwayatPengeluaran(); updateDatalistPelanggan(); updatePelangganMasterList();
             alert('Import selesai!');
         }
 
