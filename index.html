@@ -377,10 +377,11 @@
             <div class="form-group"><label>Total biaya tetap per bulan (Rp)</label><input type="number" id="setting-biaya-tetap" placeholder="Contoh: 500000"></div>
             <button onclick="simpanBiayaTetap()">💾 Simpan</button>
         </div>
-        <div class="card"><div class="card-title">🔬 Sertifikat Lab DHA</div>
-            <div class="info-box" style="margin-bottom:12px;">💡 Link publik sertifikat lab (Google Drive/website) untuk ditampilkan sebagai QR code di nota digital.</div>
+        <div class="card"><div class="card-title">🔬 Sertifikat Lab & Review</div>
+            <div class="info-box" style="margin-bottom:12px;">💡 Kedua link ini muncul sebagai 2 QR code di nota digital penjualan.</div>
             <div class="form-group"><label>Link sertifikat lab</label><input type="text" id="setting-link-sertifikat" placeholder="https://..."></div>
             <div class="form-group"><label>Nomor sertifikat (opsional)</label><input type="text" id="setting-nomor-sertifikat" placeholder="Contoh: 1148/UN1/LPPT/TR/2026"></div>
+            <div class="form-group"><label>Link Google Review</label><input type="text" id="setting-link-review" placeholder="https://g.page/r/..."></div>
             <button onclick="simpanSertifikat()">💾 Simpan</button>
         </div>
         <div class="card"><div class="card-title">📁 Backup & Restore</div>
@@ -427,7 +428,7 @@
         let dataPelangganMaster = []; // {id, nama, wa, catatan} - database pelanggan jangka panjang
         let populasi = { horn: 6, elba: 32 }, harga = { horn: 2000, elba: 2500, hornPackPromo: 60000, elbaPackPromo: 75000, hornPack: 23000, elbaPack: 28000 }, stokAwal = { horn: 0, elba: 0 };
         let biayaTetapBulanan = 0;
-        let sertifikatLab = { link: '', nomor: '' };
+        let sertifikatLab = { link: '', nomor: '', linkReview: '' };
         let satuanAktif = 'butir', poSatuanAktif = 'butir';
         let fileDataImport = null;
         let pendingPOId = null;
@@ -1377,6 +1378,8 @@
             let p = dataPemasukan.find(x => x.id === id);
             if (!p || p.tipe !== 'jual') return;
             notaTransaksiAktif = p;
+            notaQRPending = 0;
+            notaSiapDiunduh = false;
             document.getElementById('modal-nota').style.display = 'flex';
             gambarNota(p);
         }
@@ -1389,92 +1392,189 @@
         function gambarNota(p) {
             let canvas = document.getElementById('nota-canvas');
             let ctx = canvas.getContext('2d');
-            let W = 600, H = sertifikatLab.link ? 780 : 620;
+            let adaQR = sertifikatLab.link || sertifikatLab.linkReview;
+            let W = 600;
+            // Gambar dulu di kanvas yang cukup tinggi, lalu di akhir di-crop pas ke tinggi konten aktual
+            // (lihat pemotongan di akhir fungsi) supaya jarak QR ke footer selalu rapat & konsisten.
+            let H = adaQR ? 900 : 650;
             canvas.width = W; canvas.height = H;
 
-            // Background
-            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+            // Background dasar
+            ctx.fillStyle = '#F7F9F7'; ctx.fillRect(0, 0, W, H);
 
-            // Header hijau
+            // ===== Header dengan aksen dekoratif =====
             let jenisColor = p.jenis === 'horn' ? '#F9A825' : '#6A1B9A';
-            ctx.fillStyle = '#2E7D32'; ctx.fillRect(0, 0, W, 110);
+            let headerH = 130;
+            ctx.fillStyle = '#1B5E20'; ctx.fillRect(0, 0, W, headerH);
+            ctx.fillStyle = '#2E7D32'; ctx.fillRect(0, 0, W, headerH - 8);
+            // Garis aksen bawah header
+            ctx.fillStyle = '#F9A825'; ctx.fillRect(0, headerH - 8, W, 4);
+            ctx.fillStyle = '#6A1B9A'; ctx.fillRect(W/2, headerH - 4, W/2, 4);
+
             ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center';
-            ctx.font = 'bold 30px Arial'; ctx.fillText('4R Farm', W/2, 50);
-            ctx.font = '16px Arial'; ctx.fillText('Spesialis Telur Omega 3 + DHA', W/2, 78);
-            ctx.font = '13px Arial'; ctx.fillText('Jombang, Jawa Timur', W/2, 98);
+            ctx.font = 'bold 32px Arial'; ctx.fillText('4R Farm', W/2, 52);
+            ctx.font = '15px Arial'; ctx.globalAlpha = 0.95; ctx.fillText('Spesialis Telur Omega-3 + DHA', W/2, 78);
+            ctx.font = '12px Arial'; ctx.globalAlpha = 0.8; ctx.fillText('📍 Jombang, Jawa Timur', W/2, 98);
+            ctx.globalAlpha = 1;
 
-            let y = 150;
-            ctx.fillStyle = '#333'; ctx.textAlign = 'left'; ctx.font = 'bold 20px Arial';
-            ctx.fillText('🧾 Nota Penjualan', 30, y); y += 12;
-            ctx.strokeStyle = '#eee'; ctx.beginPath(); ctx.moveTo(30, y+10); ctx.lineTo(W-30, y+10); ctx.stroke(); y += 40;
+            // ===== Kartu putih melayang untuk isi nota =====
+            let cardX = 24, cardY = headerH + 20, cardW = W - 48;
+            function roundRect(x, y, w, h, r){
+                ctx.beginPath();
+                ctx.moveTo(x+r, y);
+                ctx.arcTo(x+w, y, x+w, y+h, r);
+                ctx.arcTo(x+w, y+h, x, y+h, r);
+                ctx.arcTo(x, y+h, x, y, r);
+                ctx.arcTo(x, y, x+w, y, r);
+                ctx.closePath();
+            }
 
-            ctx.font = '15px Arial'; ctx.fillStyle = '#666';
-            function baris(label, value, valueColor){
-                ctx.fillStyle = '#888'; ctx.font = '13px Arial'; ctx.fillText(label, 30, y);
-                ctx.fillStyle = valueColor || '#222'; ctx.font = 'bold 16px Arial'; ctx.textAlign = 'right'; ctx.fillText(value, W-30, y);
+            let y = cardY + 34;
+            ctx.fillStyle = '#1a1a1a'; ctx.textAlign = 'left'; ctx.font = 'bold 19px Arial';
+            ctx.fillText('🧾 Nota Penjualan', cardX + 24, y);
+            // Badge jenis telur di kanan judul
+            let badgeLabel = p.jenis === 'horn' ? '🐔 HORN' : '🐔 KAMPUNG';
+            ctx.font = 'bold 12px Arial';
+            let badgeW = ctx.measureText(badgeLabel).width + 24;
+            ctx.fillStyle = jenisColor;
+            roundRect(cardX + cardW - 24 - badgeW, y - 20, badgeW, 26, 13); ctx.fill();
+            ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
+            ctx.fillText(badgeLabel, cardX + cardW - 24 - badgeW/2, y - 2);
+            ctx.textAlign = 'left';
+
+            y += 20;
+            ctx.strokeStyle = '#eee'; ctx.beginPath(); ctx.moveTo(cardX+24, y); ctx.lineTo(cardX+cardW-24, y); ctx.stroke();
+            y += 32;
+
+            function baris(label, value, valueColor, valueSize){
+                ctx.fillStyle = '#999'; ctx.font = '13px Arial'; ctx.textAlign = 'left'; ctx.fillText(label, cardX + 24, y);
+                ctx.fillStyle = valueColor || '#222'; ctx.font = `bold ${valueSize||16}px Arial`; ctx.textAlign = 'right'; ctx.fillText(value, cardX + cardW - 24, y);
                 ctx.textAlign = 'left';
-                y += 34;
+                y += 32;
             }
             baris('Tanggal', p.tanggal);
             baris('Pembeli', p.pembeli || '-');
-            baris('Jenis Telur', p.jenis === 'horn' ? '🐔 Horn' : '🐔 Kampung', jenisColor);
             baris('Jumlah', `${p.jumlah} ${p.satuan === 'butir' ? 'butir' : 'pack'} (${p.jumlahButir} butir)`);
-            baris('Total Bayar', formatRupiah(p.total), '#2E7D32');
 
-            y += 10;
-            ctx.strokeStyle = '#eee'; ctx.beginPath(); ctx.moveTo(30, y); ctx.lineTo(W-30, y); ctx.stroke();
-            y += 30;
+            y += 6;
+            ctx.strokeStyle = '#eee'; ctx.beginPath(); ctx.moveTo(cardX+24, y); ctx.lineTo(cardX+cardW-24, y); ctx.stroke();
+            y += 34;
+
+            // Total bayar ditonjolkan dalam kotak hijau muda
+            ctx.fillStyle = '#E8F5E9'; roundRect(cardX + 24, y - 26, cardW - 48, 46, 10); ctx.fill();
+            ctx.fillStyle = '#555'; ctx.font = '13px Arial'; ctx.fillText('Total Bayar', cardX + 40, y + 2);
+            ctx.fillStyle = '#1B5E20'; ctx.font = 'bold 22px Arial'; ctx.textAlign = 'right'; ctx.fillText(formatRupiah(p.total), cardX + cardW - 40, y + 4);
+            ctx.textAlign = 'left';
+            y += 50;
 
             // Info sertifikat lab
             if (sertifikatLab.nomor) {
-                ctx.fillStyle = '#2E7D32'; ctx.font = 'bold 13px Arial'; ctx.textAlign = 'left';
-                ctx.fillText(`✅ Terverifikasi Lab: ${sertifikatLab.nomor}`, 30, y);
-                y += 24;
+                ctx.fillStyle = '#2E7D32'; ctx.font = 'bold 13px Arial';
+                ctx.fillText(`✅ Terverifikasi Lab: ${sertifikatLab.nomor}`, cardX + 24, y);
+                y += 22;
             }
-            ctx.fillStyle = '#999'; ctx.font = '12px Arial';
-            ctx.fillText('DHA 2.90% | Omega-3 3.16% | Rasio Omega 6:3 = 4.05:1', 30, y);
-            y += 30;
+            ctx.fillStyle = '#888'; ctx.font = '11px Arial';
+            ctx.fillText('DHA 2.90% • Omega-3 3.16% • Rasio Omega 6:3 = 4.05:1', cardX + 24, y);
+            y += 28;
 
-            if (sertifikatLab.link) {
-                ctx.fillStyle = '#666'; ctx.font = '13px Arial'; ctx.textAlign = 'center';
-                ctx.fillText('📱 Scan untuk lihat sertifikat lab DHA', W/2, y);
-                y += 20;
-                gambarQRKeCanvas(ctx, sertifikatLab.link, W/2 - 75, y, 150);
+            let cardBottom = y + 6;
+            // Border kartu (digambar terakhir supaya di atas konten background)
+            ctx.strokeStyle = '#e5e5e5'; ctx.lineWidth = 1;
+            roundRect(cardX, cardY, cardW, cardBottom - cardY, 18); ctx.stroke();
+
+            y = cardBottom + 30;
+
+            // ===== 2 QR sejajar: Sertifikat Lab & Google Review =====
+            if (adaQR) {
+                ctx.fillStyle = '#333'; ctx.font = 'bold 14px Arial'; ctx.textAlign = 'center';
+                ctx.fillText('📱 Scan Kode QR', W/2, y);
+                y += 26;
+
+                let qrSize = 130;
+                let gap = 40;
+                let totalQRWidth = (sertifikatLab.link && sertifikatLab.linkReview) ? (qrSize*2 + gap) : qrSize;
+                let startX = W/2 - totalQRWidth/2;
+                let qrY = y;
+
+                if (sertifikatLab.link) {
+                    gambarQRKeCanvas(ctx, sertifikatLab.link, startX, qrY, qrSize);
+                    ctx.fillStyle = '#555'; ctx.font = 'bold 11px Arial'; ctx.textAlign = 'center';
+                    ctx.fillText('🔬 Sertifikat Lab DHA', startX + qrSize/2, qrY + qrSize + 20);
+                }
+                if (sertifikatLab.linkReview) {
+                    let xReview = sertifikatLab.link ? (startX + qrSize + gap) : startX;
+                    gambarQRKeCanvas(ctx, sertifikatLab.linkReview, xReview, qrY, qrSize);
+                    ctx.fillStyle = '#555'; ctx.font = 'bold 11px Arial'; ctx.textAlign = 'center';
+                    ctx.fillText('⭐ Beri Ulasan Google', xReview + qrSize/2, qrY + qrSize + 20);
+                }
+                y = qrY + qrSize + 45;
+            }
+
+            let footerY = y + 14;
+            ctx.fillStyle = '#aaa'; ctx.font = 'italic 12px Arial'; ctx.textAlign = 'center';
+            ctx.fillText('Terima kasih telah mempercayai 4R Farm 🙏', W/2, footerY);
+
+            let tinggiFinal = footerY + 24;
+            notaSiapDiunduh = false;
+            if (adaQR) {
+                // QR digambar async; setelah semua QR selesai, crop kanvas ke tinggi konten aktual.
+                let tungguLaluCrop = () => {
+                    if (notaQRPending > 0) { setTimeout(tungguLaluCrop, 60); return; }
+                    cropCanvasNota(canvas, ctx, W, tinggiFinal);
+                    notaSiapDiunduh = true;
+                };
+                setTimeout(tungguLaluCrop, 150);
             } else {
+                cropCanvasNota(canvas, ctx, W, tinggiFinal);
                 notaSiapDiunduh = true;
             }
+        }
 
-            ctx.fillStyle = '#bbb'; ctx.font = '11px Arial'; ctx.textAlign = 'center';
-            ctx.fillText('Terima kasih telah mempercayai 4R Farm 🙏', W/2, H-20);
+        // Memotong kanvas nota ke tinggi konten aktual, supaya tidak ada ruang kosong berlebih di bawah
+        // (misalnya setelah QR code) sebelum baris footer/ucapan terima kasih.
+        function cropCanvasNota(canvas, ctx, W, tinggiFinal) {
+            if (canvas.height <= tinggiFinal) return;
+            let imgData = ctx.getImageData(0, 0, W, tinggiFinal);
+            canvas.height = tinggiFinal;
+            ctx.putImageData(imgData, 0, 0);
         }
 
         let notaSiapDiunduh = true;
 
         // Generate QR code ke elemen tersembunyi lalu gambar hasilnya ke canvas nota.
         // notaSiapDiunduh dipakai supaya tombol download menunggu QR selesai digambar dulu.
+        let notaQRPending = 0;
+
+        // Generate QR code ke elemen tersembunyi lalu gambar hasilnya ke canvas nota.
+        // notaQRPending melacak berapa QR yang masih diproses; notaSiapDiunduh true saat semua selesai.
         function gambarQRKeCanvas(ctx, text, x, y, size) {
             notaSiapDiunduh = false;
-            let tempId = 'temp-qr-' + Date.now();
+            notaQRPending++;
+            let tempId = 'temp-qr-' + Date.now() + '-' + Math.random();
             let tempDiv = document.createElement('div');
             tempDiv.id = tempId;
             tempDiv.style.display = 'none';
             document.body.appendChild(tempDiv);
             new QRCode(tempDiv, { text: text, width: size, height: size, correctLevel: QRCode.CorrectLevel.M });
+            let selesai = () => {
+                notaQRPending--;
+                if (notaQRPending <= 0) { notaQRPending = 0; notaSiapDiunduh = true; }
+            };
             let cobaGambar = (percobaan) => {
                 let qrCanvas = tempDiv.querySelector('canvas');
                 let qrImg = tempDiv.querySelector('img');
                 if (qrCanvas && qrCanvas.width > 0) {
                     ctx.drawImage(qrCanvas, x, y, size, size);
-                    notaSiapDiunduh = true;
+                    selesai();
                     document.body.removeChild(tempDiv);
                 } else if (qrImg && qrImg.complete && qrImg.naturalWidth > 0) {
                     ctx.drawImage(qrImg, x, y, size, size);
-                    notaSiapDiunduh = true;
+                    selesai();
                     document.body.removeChild(tempDiv);
                 } else if (percobaan < 10) {
                     setTimeout(() => cobaGambar(percobaan+1), 100);
                 } else {
-                    notaSiapDiunduh = true; // gagal, tapi jangan blokir download selamanya
+                    selesai(); // gagal, tapi jangan blokir download selamanya
                     if (document.body.contains(tempDiv)) document.body.removeChild(tempDiv);
                 }
             };
@@ -1581,12 +1681,14 @@
         function simpanSertifikat(){
             sertifikatLab.link = document.getElementById('setting-link-sertifikat').value.trim();
             sertifikatLab.nomor = document.getElementById('setting-nomor-sertifikat').value.trim();
+            sertifikatLab.linkReview = document.getElementById('setting-link-review').value.trim();
             queueSync(); updateSertifikatForm();
-            alert('Data sertifikat disimpan!');
+            alert('Data sertifikat & review disimpan!');
         }
         function updateSertifikatForm(){
             let l=document.getElementById('setting-link-sertifikat'); if(l) l.value=sertifikatLab.link;
             let n=document.getElementById('setting-nomor-sertifikat'); if(n) n.value=sertifikatLab.nomor;
+            let r=document.getElementById('setting-link-review'); if(r) r.value=sertifikatLab.linkReview;
         }
         function updateExportStats(){ let pembeliUnik=new Set(dataPemasukan.filter(p=>p.tipe==='jual'&&p.pembeli).map(p=>p.pembeli)); setText('stat-produksi', dataProduksi.length); setText('stat-pemasukan', dataPemasukan.length); setText('stat-pengeluaran', dataPengeluaran.length); setText('stat-pembeli', pembeliUnik.size); }
 
