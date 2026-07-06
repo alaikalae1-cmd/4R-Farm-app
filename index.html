@@ -151,7 +151,7 @@
                     <div id="stok-horn-info" style="font-size:11px; color:#666; margin-top:4px;"></div>
                 </div>
                 <div class="stat-card" style="background:#e8f5e9;">
-                    <div class="stat-value" id="stok-elba">0</div><div class="stat-label">Stok Elba (butir)</div>
+                    <div class="stat-value" id="stok-elba">0</div><div class="stat-label">Stok Kampung (butir)</div>
                     <div id="stok-elba-info" style="font-size:11px; color:#666; margin-top:4px;"></div>
                 </div>
             </div>
@@ -161,7 +161,7 @@
         <div class="card"><div class="card-title">🐔 Populasi Saat Ini</div>
             <div class="stats-grid">
                 <div class="stat-card"><div class="stat-value" id="pop-horn">0</div><div class="stat-label">Ayam Horn</div></div>
-                <div class="stat-card"><div class="stat-value" id="pop-elba">0</div><div class="stat-label">Ayam Elba</div></div>
+                <div class="stat-card"><div class="stat-value" id="pop-elba">0</div><div class="stat-label">Ayam Kampung</div></div>
             </div>
         </div>
         <div class="card"><div class="card-title">📉 Evaluasi Telur Tidak Layak</div><div id="evaluasi-container"></div></div>
@@ -172,7 +172,7 @@
                 <div><label style="font-size:12px; color:#666;">Tampilan</label><select id="trend-mode" onchange="updateTrendChart()"><option value="jumlah">Jumlah Butir</option><option value="hdp">HDP (%)</option></select></div>
             </div>
             <div style="display:flex; gap:16px; margin-bottom:8px; font-size:12px;">
-                <span style="color:#F9A825;">● Horn</span><span style="color:#6A1B9A;">● Elba</span>
+                <span style="color:#F9A825;">● Horn</span><span style="color:#6A1B9A;">● Kampung</span>
             </div>
             <div id="trend-chart"></div>
         </div>
@@ -195,7 +195,7 @@
                     <div style="background:#f0f0f0; border-radius:12px; padding:12px; text-align:center;">Layak jual: <strong id="horn-layak">0</strong></div>
                 </div>
             </div>
-            <div class="form-group"><label>🐔 Telur Elba/Kampung</label>
+            <div class="form-group"><label>🐔 Telur Kampung</label>
                 <input type="number" id="elba-total" placeholder="Total produksi (butir)" value="0">
                 <div class="row-2" style="margin-top:8px;">
                     <input type="number" id="elba-tidak-layak" placeholder="Tidak layak jual" value="0">
@@ -221,7 +221,7 @@
                     <label>Jenis Telur</label>
                     <div class="jenis-group">
                         <button type="button" id="jual-btn-horn" class="jenis-btn active" onclick="setJualJenis('horn')">🐔 HORN</button>
-                        <button type="button" id="jual-btn-elba" class="jenis-btn" onclick="setJualJenis('elba')">🐔 ELBA</button>
+                        <button type="button" id="jual-btn-elba" class="jenis-btn" onclick="setJualJenis('elba')">🐔 KAMPUNG</button>
                     </div>
                 </div>
                 <div class="form-group"><label>Satuan</label><div class="satuan-group"><button type="button" id="btn-butir" class="satuan-btn active" onclick="setSatuan('butir')">BUTIR</button><button type="button" id="btn-pack" class="satuan-btn" onclick="setSatuan('pack')">PACK (1 pack = 10 butir)</button></div></div>
@@ -237,7 +237,7 @@
                     <label>Jenis Telur</label>
                     <div class="jenis-group">
                         <button type="button" id="gift-btn-horn" class="jenis-btn active" onclick="setGiftJenis('horn')">🐔 HORN</button>
-                        <button type="button" id="gift-btn-elba" class="jenis-btn" onclick="setGiftJenis('elba')">🐔 ELBA</button>
+                        <button type="button" id="gift-btn-elba" class="jenis-btn" onclick="setGiftJenis('elba')">🐔 KAMPUNG</button>
                     </div>
                 </div>
                 <div class="form-group"><label>Jumlah (butir)</label><input type="number" id="gift-jumlah" placeholder="Jumlah"></div>
@@ -268,7 +268,7 @@
                 <label>Jenis Telur</label>
                 <div class="jenis-group">
                     <button type="button" id="po-btn-horn" class="jenis-btn active" onclick="setPoJenis('horn')">🐔 HORN</button>
-                    <button type="button" id="po-btn-elba" class="jenis-btn" onclick="setPoJenis('elba')">🐔 ELBA</button>
+                    <button type="button" id="po-btn-elba" class="jenis-btn" onclick="setPoJenis('elba')">🐔 KAMPUNG</button>
                 </div>
             </div>
             <div class="form-group"><label>Satuan</label><div class="satuan-group"><button type="button" id="po-btn-butir" class="satuan-btn active" onclick="setPoSatuan('butir')">BUTIR</button><button type="button" id="po-btn-pack" class="satuan-btn" onclick="setPoSatuan('pack')">PACK (1 pack = 10 butir)</button></div></div>
@@ -280,7 +280,7 @@
             <button onclick="simpanPO()">💾 Simpan PO</button>
         </div>
         <div class="card"><div class="card-title" style="border-left-color:#F9A825;">🐔 Antrian PO - HORN</div><div id="po-list-horn" class="riwayat-list"><div class="info-box" style="text-align:center;">Belum ada PO Horn</div></div></div>
-        <div class="card"><div class="card-title" style="border-left-color:#6A1B9A;">🐔 Antrian PO - ELBA</div><div id="po-list-elba" class="riwayat-list"><div class="info-box" style="text-align:center;">Belum ada PO Elba</div></div></div>
+        <div class="card"><div class="card-title" style="border-left-color:#6A1B9A;">🐔 Antrian PO - KAMPUNG</div><div id="po-list-elba" class="riwayat-list"><div class="info-box" style="text-align:center;">Belum ada PO Kampung</div></div></div>
         <div class="card"><div class="card-title">📋 Riwayat PO Selesai</div><div id="po-history" class="riwayat-list"><div class="info-box" style="text-align:center;">Belum ada PO selesai</div></div></div>
     </div>
 
@@ -340,7 +340,7 @@
             <div id="produktivitas-alert"></div>
             <div id="produktivitas-container"></div>
             <div style="display:flex; gap:16px; margin:16px 0 8px; font-size:12px;">
-                <span style="color:#F9A825;">● Horn</span><span style="color:#6A1B9A;">● Elba</span>
+                <span style="color:#F9A825;">● Horn</span><span style="color:#6A1B9A;">● Kampung</span>
             </div>
             <div id="produktivitas-chart"></div>
         </div>
@@ -358,7 +358,7 @@
 
     <!-- Pengaturan Tab -->
     <div id="tab-pengaturan" class="tab-content hidden">
-        <div class="card"><div class="card-title">⚙️ Populasi</div><div class="row-2"><div><label>Horn (ekor)</label><input type="number" id="setting-horn-pop"></div><div><label>Elba (ekor)</label><input type="number" id="setting-elba-pop"></div></div><button onclick="simpanPopulasi()">💾 Simpan</button></div>
+        <div class="card"><div class="card-title">⚙️ Populasi</div><div class="row-2"><div><label>Horn (ekor)</label><input type="number" id="setting-horn-pop"></div><div><label>Kampung (ekor)</label><input type="number" id="setting-elba-pop"></div></div><button onclick="simpanPopulasi()">💾 Simpan</button></div>
         <div class="card"><div class="card-title">💰 Harga Jual</div>
             <div class="info-box" style="margin-bottom:12px;">💡 Harga per pack (1 pack = 10 butir). Harga promo berlaku otomatis tiap kelipatan 3 pack.</div>
             <div class="row-2">
@@ -366,12 +366,12 @@
                 <div><label>Horn - promo per 3 pack (Rp)</label><input type="number" id="setting-horn-price-promo"></div>
             </div>
             <div class="row-2" style="margin-top:12px;">
-                <div><label>Elba - 1 pack (Rp)</label><input type="number" id="setting-elba-price"></div>
-                <div><label>Elba - promo per 3 pack (Rp)</label><input type="number" id="setting-elba-price-promo"></div>
+                <div><label>Kampung - 1 pack (Rp)</label><input type="number" id="setting-elba-price"></div>
+                <div><label>Kampung - promo per 3 pack (Rp)</label><input type="number" id="setting-elba-price-promo"></div>
             </div>
             <button onclick="simpanHarga()" style="margin-top:12px;">💾 Simpan</button>
         </div>
-        <div class="card"><div class="card-title">📦 Stok Awal</div><div class="row-2"><div><label>Stok Horn (butir)</label><input type="number" id="stok-awal-horn" value="0"></div><div><label>Stok Elba (butir)</label><input type="number" id="stok-awal-elba" value="0"></div></div><button onclick="setStokAwal()">Set Stok Awal</button><div class="info-box">💡 Stok awal diisi sekali</div></div>
+        <div class="card"><div class="card-title">📦 Stok Awal</div><div class="row-2"><div><label>Stok Horn (butir)</label><input type="number" id="stok-awal-horn" value="0"></div><div><label>Stok Kampung (butir)</label><input type="number" id="stok-awal-elba" value="0"></div></div><button onclick="setStokAwal()">Set Stok Awal</button><div class="info-box">💡 Stok awal diisi sekali</div></div>
         <div class="card"><div class="card-title">🏦 Biaya Tetap Bulanan</div>
             <div class="info-box" style="margin-bottom:12px;">💡 Biaya rutin di luar pakan/obat (sewa kandang, listrik, dll) untuk kalkulasi Break-Even.</div>
             <div class="form-group"><label>Total biaya tetap per bulan (Rp)</label><input type="number" id="setting-biaya-tetap" placeholder="Contoh: 500000"></div>
@@ -879,7 +879,7 @@
             let html = `<div class="info-box" style="margin-bottom:10px;">✅ ${waOrderDrafts.length} order terbaca. Cek dulu sebelum ditambahkan ke antrian PO.</div>`;
             waOrderDrafts.forEach((d, idx) => {
                 let jenisClass = d.jenis === 'horn' ? 'po-horn' : 'po-elba';
-                let jenisTag = d.jenis === 'horn' ? '<span class="po-jenis-tag-horn">🐔 Horn</span>' : '<span class="po-jenis-tag-elba">🐔 Elba</span>';
+                let jenisTag = d.jenis === 'horn' ? '<span class="po-jenis-tag-horn">🐔 Horn</span>' : '<span class="po-jenis-tag-elba">🐔 Kampung</span>';
                 html += `<div class="po-item ${jenisClass}">
                     <div class="po-header-row"><span class="nama">${jenisTag} <input type="text" value="${d.nama.replace(/"/g,'&quot;')}" oninput="waOrderDrafts[${idx}].nama=this.value" style="display:inline-block; width:auto; padding:4px 8px; font-size:13px; border-radius:6px;"></span>
                     <span class="po-actions"><button class="small icon-only compact success" onclick="tambahkanWaOrderDraft(${idx})">✓ Tambahkan</button><button class="small icon-only compact danger" onclick="hapusWaOrderDraft(${idx})">🗑️</button></span></div>
@@ -969,8 +969,8 @@
             let rataJenis = jenis === 'horn' ? rata.horn : rata.elba;
             let list = dataPO.filter(p => p.status === 'active' && p.jenis === jenis).sort((a,b) => a.urutan - b.urutan);
             let container = document.getElementById(containerId);
-            let jenisTagHtml = jenis === 'horn' ? '<span class="po-jenis-tag-horn">🐔 Horn</span>' : '<span class="po-jenis-tag-elba">🐔 Elba</span>';
-            if(list.length === 0){ container.innerHTML = `<div class="info-box" style="text-align:center;">Belum ada PO ${jenis === 'horn' ? 'Horn' : 'Elba'}</div>`; return; }
+            let jenisTagHtml = jenis === 'horn' ? '<span class="po-jenis-tag-horn">🐔 Horn</span>' : '<span class="po-jenis-tag-elba">🐔 Kampung</span>';
+            if(list.length === 0){ container.innerHTML = `<div class="info-box" style="text-align:center;">Belum ada PO ${jenis === 'horn' ? 'Horn' : 'Kampung'}</div>`; return; }
             let html = '';
             let totalKekurangan = 0;
             list.forEach((po, idx) => {
@@ -998,7 +998,7 @@
             let selesaiPO = dataPO.filter(p => p.status === 'selesai');
             if(selesaiPO.length === 0){ historyContainer.innerHTML = '<div class="info-box" style="text-align:center;">Belum ada PO selesai</div>'; } else {
                 let html = '';
-                selesaiPO.slice(-15).reverse().forEach(po => { html += `<div class="riwayat-item" style="border-left-color:#2E7D32;"><div class="riwayat-header"><span>✅ ${po.nama}</span><span>${po.tanggal}</span></div><div class="riwayat-detail">${po.jenis === 'horn' ? 'Horn' : 'Elba'} | ${po.jumlah} ${po.satuan === 'butir' ? 'butir' : 'pack'} | ${po.lunas ? 'Lunas' : 'Belum bayar'}</div></div>`; });
+                selesaiPO.slice(-15).reverse().forEach(po => { html += `<div class="riwayat-item" style="border-left-color:#2E7D32;"><div class="riwayat-header"><span>✅ ${po.nama}</span><span>${po.tanggal}</span></div><div class="riwayat-detail">${po.jenis === 'horn' ? 'Horn' : 'Kampung'} | ${po.jumlah} ${po.satuan === 'butir' ? 'butir' : 'pack'} | ${po.lunas ? 'Lunas' : 'Belum bayar'}</div></div>`; });
                 historyContainer.innerHTML = html;
             }
         }
@@ -1050,7 +1050,7 @@
                     if (est) estimasiInfo = `<div class="po-status" style="color:#FF9800; font-size:11px;">${est}</div>`;
                 }
                 let jenisClass = po.jenis === 'horn' ? 'po-horn' : 'po-elba';
-                let jenisTag = po.jenis === 'horn' ? '<span class="po-jenis-tag-horn">🐔 Horn</span>' : '<span class="po-jenis-tag-elba">🐔 Elba</span>';
+                let jenisTag = po.jenis === 'horn' ? '<span class="po-jenis-tag-horn">🐔 Horn</span>' : '<span class="po-jenis-tag-elba">🐔 Kampung</span>';
                 html += `<div class="po-item ${jenisClass}" style="padding:8px 10px;"><div class="po-header-row" style="margin-bottom:2px;"><span class="nama" style="font-size:13px;">${idx+1}. ${jenisTag} ${po.nama}</span></div><div class="po-meta-row"><span>${po.jumlahButir}btr</span><span>${po.lunas ? '<span class="status-lunas">✅ Lunas</span>' : '<span class="status-belum">💰 Belum bayar</span>'}</span>${stokCukup ? `<span class="stok-cukup">${stokInfo}</span>` : ''}</div>${estimasiInfo}</div>`;
             });
             container.innerHTML = html;
@@ -1275,7 +1275,7 @@
             let container=document.getElementById('riwayat-produksi');
             if(dataProduksi.length===0){ container.innerHTML='<div class="info-box" style="text-align:center;">Belum ada data</div>'; return; }
             let html='';
-            [...dataProduksi].reverse().slice(0,15).forEach(p=>{ html+=`<div class="riwayat-item produksi"><div class="riwayat-header"><span>📅 ${p.tanggal} ${p.jam}</span><span>${p.catatan||'-'}</span></div><div class="riwayat-detail">🐔 Horn: ${p.hornTotal} butir (tidak layak ${p.hornTidak}) → layak ${p.hornLayak}<br>🐔 Elba: ${p.elbaTotal} butir (tidak layak ${p.elbaTidak}) → layak ${p.elbaLayak}</div><div class="riwayat-actions"><button class="delete-entry" onclick="hapusProduksi(${p.id})">🗑️ Hapus</button></div></div>`; });
+            [...dataProduksi].reverse().slice(0,15).forEach(p=>{ html+=`<div class="riwayat-item produksi"><div class="riwayat-header"><span>📅 ${p.tanggal} ${p.jam}</span><span>${p.catatan||'-'}</span></div><div class="riwayat-detail">🐔 Horn: ${p.hornTotal} butir (tidak layak ${p.hornTidak}) → layak ${p.hornLayak}<br>🐔 Kampung: ${p.elbaTotal} butir (tidak layak ${p.elbaTidak}) → layak ${p.elbaLayak}</div><div class="riwayat-actions"><button class="delete-entry" onclick="hapusProduksi(${p.id})">🗑️ Hapus</button></div></div>`; });
             container.innerHTML=html;
         }
 
@@ -1417,7 +1417,7 @@
             }
             baris('Tanggal', p.tanggal);
             baris('Pembeli', p.pembeli || '-');
-            baris('Jenis Telur', p.jenis === 'horn' ? '🐔 Horn' : '🐔 Elba', jenisColor);
+            baris('Jenis Telur', p.jenis === 'horn' ? '🐔 Horn' : '🐔 Kampung', jenisColor);
             baris('Jumlah', `${p.jumlah} ${p.satuan === 'butir' ? 'butir' : 'pack'} (${p.jumlahButir} butir)`);
             baris('Total Bayar', formatRupiah(p.total), '#2E7D32');
 
@@ -1497,8 +1497,8 @@
             let html='';
             [...dataPemasukan].reverse().slice(0,15).forEach(p=>{
                 let tipeClass='', tipeText='', detailText='';
-                if(p.tipe==='jual'){ tipeClass='jual'; tipeText='💰 PENJUALAN'; detailText=`${p.jenis==='horn'?'Horn':'Elba'} | ${p.jumlahButir} butir | ${formatRupiah(p.total)} | ${p.pembeli}`; }
-                else if(p.tipe==='gift'){ tipeClass='gift'; tipeText='🎁 GIFT'; detailText=`${p.jenis==='horn'?'Horn':'Elba'} | ${p.jumlahButir} butir | ke: ${p.penerima}`; }
+                if(p.tipe==='jual'){ tipeClass='jual'; tipeText='💰 PENJUALAN'; detailText=`${p.jenis==='horn'?'Horn':'Kampung'} | ${p.jumlahButir} butir | ${formatRupiah(p.total)} | ${p.pembeli}`; }
+                else if(p.tipe==='gift'){ tipeClass='gift'; tipeText='🎁 GIFT'; detailText=`${p.jenis==='horn'?'Horn':'Kampung'} | ${p.jumlahButir} butir | ke: ${p.penerima}`; }
                 else{ tipeClass='kas'; tipeText='📝 KAS'; detailText=`${formatRupiah(p.nominal)} | ${p.pembeli!=='-'?p.pembeli:''}`; }
                 html+=`<div class="riwayat-item ${tipeClass}"><div class="riwayat-header"><span>${tipeText}</span><span>${p.tanggal}</span></div><div class="riwayat-detail">${detailText}</div><div class="riwayat-actions">${p.tipe==='jual'?`<button class="small" style="background:#25D366;" onclick="bukaNotaDigital(${p.id})">🧾 Nota</button>`:''}<button class="delete-entry" onclick="hapusPemasukan(${p.id})">🗑️ Hapus</button></div></div>`;
             });
@@ -1630,7 +1630,7 @@
             last30.forEach(p=>{ th+=p.hornTotal; thd+=p.hornTidak; te+=p.elbaTotal; ted+=p.elbaTidak; });
             let ph=th>0?(thd/th*100).toFixed(1):0, pe=te>0?(ted/te*100).toFixed(1):0;
             let getStatus=(p)=>p<5?'<span class="badge badge-success">✅ Ideal (<5%)</span>':(p<10?'<span class="badge badge-warning">⚠️ Perlu Perhatian</span>':'<span class="badge badge-danger">🔴 Serius</span>');
-            document.getElementById('evaluasi-container').innerHTML=`<div class="list-item"><div class="list-item-title">🐔 Horn</div><div>Total:${th} butir | Tidak layak:${thd} butir (${ph}%)</div><div>${getStatus(ph)}</div></div><div class="list-item"><div class="list-item-title">🐔 Elba</div><div>Total:${te} butir | Tidak layak:${ted} butir (${pe}%)</div><div>${getStatus(pe)}</div></div>${ph>5||pe>5?'<div class="alert alert-warning"><strong>💡 Rekomendasi:</strong><br>- Periksa kualitas pakan<br>- Cek kesehatan ayam</div>':'<div class="alert alert-success">✅ Produksi baik!</div>'}`;
+            document.getElementById('evaluasi-container').innerHTML=`<div class="list-item"><div class="list-item-title">🐔 Horn</div><div>Total:${th} butir | Tidak layak:${thd} butir (${ph}%)</div><div>${getStatus(ph)}</div></div><div class="list-item"><div class="list-item-title">🐔 Kampung</div><div>Total:${te} butir | Tidak layak:${ted} butir (${pe}%)</div><div>${getStatus(pe)}</div></div>${ph>5||pe>5?'<div class="alert alert-warning"><strong>💡 Rekomendasi:</strong><br>- Periksa kualitas pakan<br>- Cek kesehatan ayam</div>':'<div class="alert alert-success">✅ Produksi baik!</div>'}`;
         }
 
         function updateTrendChart(){
@@ -1711,7 +1711,7 @@
             let penerima=new Map();
             gift.forEach(g=>penerima.set(g.penerima,(penerima.get(g.penerima)||0)+g.jumlahButir));
             let top=Array.from(penerima.entries()).sort((a,b)=>b[1]-a[1]).slice(0,3);
-            let html=`<div class="stats-grid"><div class="stat-card"><div class="stat-value">${th}</div><div class="stat-label">Gift Horn</div></div><div class="stat-card"><div class="stat-value">${te}</div><div class="stat-label">Gift Elba</div></div></div>`;
+            let html=`<div class="stats-grid"><div class="stat-card"><div class="stat-value">${th}</div><div class="stat-label">Gift Horn</div></div><div class="stat-card"><div class="stat-value">${te}</div><div class="stat-label">Gift Kampung</div></div></div>`;
             if(top.length>0){ html+=`<div><strong>Top Penerima:</strong></div>`; top.forEach(([n,j])=>{ html+=`<div class="list-item"><div class="list-item-title">👤 ${n}</div><div class="list-item-detail">${j} butir</div></div>`; }); }
             document.getElementById('gift-summary').innerHTML=html;
         }
@@ -1773,7 +1773,7 @@
                         <div style="font-size:11px; color:#999;">Laba periode ini</div>
                     </div>
                     <div style="background:#F3E5F5; border-radius:16px; padding:14px; text-align:center;">
-                        <div style="font-size:12px; color:#666; margin-bottom:4px;">🐔 ELBA</div>
+                        <div style="font-size:12px; color:#666; margin-bottom:4px;">🐔 KAMPUNG</div>
                         <div style="font-size:20px; font-weight:800; color:#6A1B9A;">${formatRupiah(Math.round(hppElba))}</div>
                         <div style="font-size:11px; color:#999;">HPP per butir</div>
                         <div style="margin-top:8px; font-size:16px; font-weight:700; ${labaElba<0?'color:#f44336;':'color:#2E7D32;'}">${formatRupiah(Math.round(labaElba))}</div>
@@ -1940,25 +1940,32 @@
             }
             document.getElementById('produktivitas-alert').innerHTML = alertHtml;
 
+            let statusHDPWarna = avgHDP>=70?'#2E7D32':avgHDP>=60?'#F9A825':'#f44336';
+            let statusHDPLabel = avgHDP>=70?'Baik':avgHDP>=60?'Cukup':'Perlu Perhatian';
             document.getElementById('produktivitas-container').innerHTML=`
-                <div class="stats-grid-4">
-                    <div class="stat-card"><div class="stat-value">${totalHorn}</div><div class="stat-label">Total Horn (butir)</div></div>
-                    <div class="stat-card"><div class="stat-value">${totalElba}</div><div class="stat-label">Total Elba (butir)</div></div>
-                    <div class="stat-card"><div class="stat-value">${avgHDP}%</div><div class="stat-label">Rata-rata HDP</div></div>
-                    <div class="stat-card"><div class="stat-value">${perTgl.size}</div><div class="stat-label">Hari Produksi</div></div>
+                <div style="display:flex; gap:10px; margin-bottom:10px;">
+                    <div style="flex:1; background:#FFF8E1; border-radius:14px; padding:12px 10px; text-align:center;">
+                        <div style="font-size:11px; color:#a17a00; font-weight:600; margin-bottom:2px;">🐔 HORN</div>
+                        <div style="font-size:26px; font-weight:800; color:#F9A825; line-height:1.1;">${avgHDPHorn}%</div>
+                        <div style="font-size:10px; color:#8a7550; margin-top:2px;">HDP &nbsp;•&nbsp; ${totalHorn} btr &nbsp;•&nbsp; ${persenHorn}% afkir</div>
+                    </div>
+                    <div style="flex:1; background:#F3E5F5; border-radius:14px; padding:12px 10px; text-align:center;">
+                        <div style="font-size:11px; color:#6A1B9A; font-weight:600; margin-bottom:2px;">🐔 KAMPUNG</div>
+                        <div style="font-size:26px; font-weight:800; color:#6A1B9A; line-height:1.1;">${avgHDPElba}%</div>
+                        <div style="font-size:10px; color:#7a5590; margin-top:2px;">HDP &nbsp;•&nbsp; ${totalElba} btr &nbsp;•&nbsp; ${persenElba}% afkir</div>
+                    </div>
                 </div>
-                <div style="display:flex; gap:20px; flex-wrap:wrap; margin:20px 0;">
-                    <div style="flex:1; background:#f8f9fa; border-radius:16px; padding:16px; text-align:center;"><div style="font-size:28px; font-weight:800; color:#2E7D32;">${avgHDPHorn}%</div><div style="font-size:12px; color:#666;">HDP Horn</div></div>
-                    <div style="flex:1; background:#f8f9fa; border-radius:16px; padding:16px; text-align:center;"><div style="font-size:28px; font-weight:800; color:#FF9800;">${avgHDPElba}%</div><div style="font-size:12px; color:#666;">HDP Elba</div></div>
-                    <div style="flex:1; background:#f8f9fa; border-radius:16px; padding:16px; text-align:center;"><div style="font-size:28px; font-weight:800; color:${persenHorn<persenElba?'#2E7D32':'#f44336'};">${persenHorn}%</div><div style="font-size:12px; color:#666;">% Tidak Layak Horn</div></div>
-                    <div style="flex:1; background:#f8f9fa; border-radius:16px; padding:16px; text-align:center;"><div style="font-size:28px; font-weight:800; color:${persenElba<persenHorn?'#2E7D32':'#f44336'};">${persenElba}%</div><div style="font-size:12px; color:#666;">% Tidak Layak Elba</div></div>
+                <div style="display:flex; align-items:center; gap:10px; background:#f8f9fa; border-radius:14px; padding:10px 14px; margin-bottom:14px;">
+                    <div style="font-size:22px; font-weight:800; color:${statusHDPWarna};">${avgHDP}%</div>
+                    <div style="flex:1; font-size:12px; color:#555;">HDP Gabungan · ${perTgl.size} hari produksi</div>
+                    <div style="background:${statusHDPWarna}; color:#fff; font-size:10px; font-weight:700; padding:3px 9px; border-radius:20px;">${statusHDPLabel}</div>
                 </div>
-                <div style="margin-top:20px; background:#f8f9fa; border-radius:16px; padding:16px;">
-                    <div style="font-weight:700; margin-bottom:12px;">📊 Kesimpulan Produktivitas</div>
-                    <div class="list-item">🏆 ${avgHDPHorn>avgHDPElba?'Horn lebih produktif dari Elba':(avgHDPElba>avgHDPHorn?'Elba lebih produktif dari Horn':'Produktivitas Horn dan Elba seimbang')}</div>
-                    <div class="list-item">🥚 ${persenHorn<persenElba?`Telur Horn lebih baik (${persenHorn}% tidak layak)`:persenElba<persenHorn?`Telur Elba lebih baik (${persenElba}% tidak layak)`:'Kualitas kedua jenis telur seimbang'}</div>
-                    <div class="list-item">📈 ${avgHDP>=70?'Produktivitas baik (HDP >70%)':avgHDP>=60?'Produktivitas cukup (HDP 60-70%)':'Produktivitas perlu ditingkatkan (HDP <60%)'}</div>
-                    ${perbandinganHtml}
+                <div style="background:#f8f9fa; border-radius:14px; padding:14px;">
+                    <div style="font-weight:700; margin-bottom:10px; font-size:13px;">📊 Kesimpulan</div>
+                    <div class="list-item" style="font-size:13px;">🏆 ${avgHDPHorn>avgHDPElba?'Horn lebih produktif dari Kampung':(avgHDPElba>avgHDPHorn?'Kampung lebih produktif dari Horn':'Produktivitas Horn dan Kampung seimbang')}</div>
+                    <div class="list-item" style="font-size:13px;">🥚 ${persenHorn<persenElba?`Telur Horn lebih baik (${persenHorn}% tidak layak)`:persenElba<persenHorn?`Telur Kampung lebih baik (${persenElba}% tidak layak)`:'Kualitas kedua jenis telur seimbang'}</div>
+                    <div class="list-item" style="font-size:13px;">📈 ${avgHDP>=70?'Produktivitas baik (HDP >70%)':avgHDP>=60?'Produktivitas cukup (HDP 60-70%)':'Produktivitas perlu ditingkatkan (HDP <60%)'}</div>
+                    ${perbandinganHtml.replace('class="list-item"','class="list-item" style="font-size:13px;"')}
                 </div>
             `;
             renderProduktivitasChart(perTgl);
@@ -2024,12 +2031,12 @@
             link.click(); URL.revokeObjectURL(link.href);
             alert(`Export ${data.length} data!`);
         }
-        function exportProduksi(){ if(dataProduksi.length===0){alert('Tidak ada data!');return;} let data=dataProduksi.map(p=>({Tanggal:p.tanggal,Jam:p.jam,'Horn Total':p.hornTotal,'Horn Tidak':p.hornTidak,'Horn Layak':p.hornLayak,'Elba Total':p.elbaTotal,'Elba Tidak':p.elbaTidak,'Elba Layak':p.elbaLayak,Catatan:p.catatan||''})); exportToExcel(data,'4RFarm_Produksi',['Tanggal','Jam','Horn Total','Horn Tidak','Horn Layak','Elba Total','Elba Tidak','Elba Layak','Catatan']); }
-        function exportPemasukan(){ if(dataPemasukan.length===0){alert('Tidak ada data!');return;} let data=dataPemasukan.map(p=>{ if(p.tipe==='jual') return {Tanggal:p.tanggal,Tipe:'PENJUALAN',Jenis:p.jenis==='horn'?'Horn':'Elba','Jumlah Butir':p.jumlahButir,Harga:formatRupiahExport(p.harga),Total:formatRupiahExport(p.total),Pembeli:p.pembeli}; if(p.tipe==='gift') return {Tanggal:p.tanggal,Tipe:'GIFT',Jenis:p.jenis==='horn'?'Horn':'Elba','Jumlah Butir':p.jumlahButir,Harga:'Rp 0',Total:'Rp 0',Penerima:p.penerima}; return {Tanggal:p.tanggal,Tipe:'KAS',Jenis:'-','Jumlah Butir':'-',Harga:'-',Total:formatRupiahExport(p.nominal),Pembeli:p.pembeli}; }); exportToExcel(data,'4RFarm_Pemasukan',['Tanggal','Tipe','Jenis','Jumlah Butir','Harga','Total','Pembeli/Penerima']); }
+        function exportProduksi(){ if(dataProduksi.length===0){alert('Tidak ada data!');return;} let data=dataProduksi.map(p=>({Tanggal:p.tanggal,Jam:p.jam,'Horn Total':p.hornTotal,'Horn Tidak':p.hornTidak,'Horn Layak':p.hornLayak,'Kampung Total':p.elbaTotal,'Kampung Tidak':p.elbaTidak,'Kampung Layak':p.elbaLayak,Catatan:p.catatan||''})); exportToExcel(data,'4RFarm_Produksi',['Tanggal','Jam','Horn Total','Horn Tidak','Horn Layak','Kampung Total','Kampung Tidak','Kampung Layak','Catatan']); }
+        function exportPemasukan(){ if(dataPemasukan.length===0){alert('Tidak ada data!');return;} let data=dataPemasukan.map(p=>{ if(p.tipe==='jual') return {Tanggal:p.tanggal,Tipe:'PENJUALAN',Jenis:p.jenis==='horn'?'Horn':'Kampung','Jumlah Butir':p.jumlahButir,Harga:formatRupiahExport(p.harga),Total:formatRupiahExport(p.total),Pembeli:p.pembeli}; if(p.tipe==='gift') return {Tanggal:p.tanggal,Tipe:'GIFT',Jenis:p.jenis==='horn'?'Horn':'Kampung','Jumlah Butir':p.jumlahButir,Harga:'Rp 0',Total:'Rp 0',Penerima:p.penerima}; return {Tanggal:p.tanggal,Tipe:'KAS',Jenis:'-','Jumlah Butir':'-',Harga:'-',Total:formatRupiahExport(p.nominal),Pembeli:p.pembeli}; }); exportToExcel(data,'4RFarm_Pemasukan',['Tanggal','Tipe','Jenis','Jumlah Butir','Harga','Total','Pembeli/Penerima']); }
         function exportPengeluaran(){ if(dataPengeluaran.length===0){alert('Tidak ada data!');return;} let kat={pakan:'Pakan',obat:'Obat',perawatan:'Perawatan',lainnya:'Lainnya'}; let data=dataPengeluaran.map(p=>({Tanggal:p.tanggal,Kategori:kat[p.kategori]||p.kategori,Nominal:formatRupiahExport(p.nominal),Keterangan:p.keterangan||''})); exportToExcel(data,'4RFarm_Pengeluaran',['Tanggal','Kategori','Nominal','Keterangan']); }
         function exportSemua(){
             if(dataProduksi.length===0&&dataPemasukan.length===0&&dataPengeluaran.length===0){alert('Tidak ada data!');return;}
-            let html=`<html><body><h2>PRODUKSI</h2><table border="1"><thead><tr><th>Tanggal</th><th>Jam</th><th>Horn Total</th><th>Horn Tidak</th><th>Horn Layak</th><th>Elba Total</th><th>Elba Tidak</th><th>Elba Layak</th><th>Catatan</th></tr></thead><tbody>`;
+            let html=`<html><body><h2>PRODUKSI</h2><table border="1"><thead><tr><th>Tanggal</th><th>Jam</th><th>Horn Total</th><th>Horn Tidak</th><th>Horn Layak</th><th>Kampung Total</th><th>Kampung Tidak</th><th>Kampung Layak</th><th>Catatan</th></tr></thead><tbody>`;
             dataProduksi.forEach(p=>{ html+=`<tr><td>${p.tanggal}</td><td>${p.jam}</td><td>${p.hornTotal}</td><td>${p.hornTidak}</td><td>${p.hornLayak}</td><td>${p.elbaTotal}</td><td>${p.elbaTidak}</td><td>${p.elbaLayak}</td><td>${p.catatan||''}</td></tr>`; });
             html+=`</tbody><tr><br><h2>PEMASUKAN</h2><table border="1"><thead><tr><th>Tanggal</th><th>Tipe</th><th>Detail</th><th>Total</th></tr></thead><tbody>`;
             dataPemasukan.forEach(p=>{ if(p.tipe==='jual') html+=`<tr><td>${p.tanggal}</td><td>PENJUALAN</td><td>${p.jenis} ${p.jumlahButir} butir x ${formatRupiahExport(p.harga)}</td><td>${formatRupiahExport(p.total)}</td></tr>`; else if(p.tipe==='gift') html+=`<tr><td>${p.tanggal}</td><td>GIFT</td><td>${p.jenis} ${p.jumlahButir} butir ke ${p.penerima}</td><td>Rp 0</td></tr>`; else html+=`<tr><td>${p.tanggal}</td><td>KAS</td><td>${p.pembeli}</td><td>${formatRupiahExport(p.nominal)}</td></tr>`; });
