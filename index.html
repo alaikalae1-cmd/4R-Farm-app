@@ -273,12 +273,6 @@
             <div class="info-box" style="margin-bottom:10px;">Ini pesanan dari website, belum resmi masuk antrian PO. Chat WA dulu untuk konfirmasi, baru klik Konfirmasi.</div>
             <div id="po-web-masuk-list" class="riwayat-list"></div>
         </div>
-        <div class="card"><div class="card-title" style="border-left-color:#25D366;">💬 Input dari Order WA</div>
-            <div class="info-box" style="margin-bottom:10px;">💡 Copy teks dari layar "Order" WhatsApp Business (nomor + catatan pesanan), paste di sini. Bisa banyak baris sekaligus, 1 order per baris berpasangan (nomor lalu catatannya).</div>
-            <div class="form-group"><label>Paste teks order di sini</label><textarea id="wa-order-paste" rows="6" placeholder="Contoh:&#10;+62 812-9594-7792&#10;Kampung 6 pack, 10/11 Agustus 2026&#10;&#10;+62 857-9030-1819&#10;Horn 3 pack, 7/8 Agustus 2026"></textarea></div>
-            <button onclick="parseWaOrders()" style="background:#25D366;">🔍 Parse Order</button>
-            <div id="wa-order-preview" style="margin-top:14px;"></div>
-        </div>
         <div class="card"><div class="card-title">📋 Input Pre-Order (PO)</div>
             <div class="form-group"><label>Nama Pembeli</label><input type="text" id="po-nama" list="daftar-nama-pelanggan" placeholder="Nama pembeli" oninput="autoFillWA('po-nama','po-wa')"></div>
             <div class="form-group"><label>No. WhatsApp (opsional)</label><input type="tel" id="po-wa" placeholder="Contoh: 081234567890"></div>
@@ -460,7 +454,7 @@
 
         // ==================== SYNC ONLINE (Google Apps Script) ====================
         // GANTI URL INI dengan URL Web App hasil deploy Apps Script Bapak
-        const API_URL = 'https://script.google.com/macros/s/AKfycbzfVnLe7BKD7hhxmFOcj6-Kmmzgh_E87L-tQ7qaX3An6aGm2nC_VNni--9BA8neUXlP/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzIfbMF40XVBCqVPfdK5af3giHQwXSRr0p_hLDvjimVmu6vKPbPjqRIamfDABiXBS00/exec';
         const APP_PIN = 'FARM2026'; // Harus PERSIS SAMA dengan APP_PIN di Code.gs
         let syncTimer = null;
         let isSyncing = false;
@@ -958,12 +952,15 @@
             dataPOWebMasuk.forEach(item => {
                 let jenisTag = item.jenis === 'horn' ? '<span class="po-jenis-tag-horn">🐔 Horn</span>' : '<span class="po-jenis-tag-elba">🐔 Kampung</span>';
                 let waHref = waLinkWebMasuk(item.wa);
-                html += `<div class="po-item" style="border-left-color:#1976D2; background:#E3F2FD;">
-                    <div class="po-header-row"><span class="nama">${jenisTag} ${item.nama}</span></div>
-                    <div class="po-meta-row"><span>${item.jumlah}${item.satuan === 'butir' ? 'btr' : 'pack'} (${item.jumlahButir}btr)</span><span>📱 ${item.wa}</span></div>
-                    ${item.catatan ? `<div style="font-size:12px; color:#666; margin-top:4px;">📝 ${item.catatan}</div>` : ''}
-                    ${item.estimasiSaatMasuk ? `<div style="font-size:11.5px; color:#1565C0; margin-top:4px;">📋 ${item.estimasiSaatMasuk}</div>` : ''}
-                    <div style="display:flex; gap:6px; margin-top:8px;">
+                let estRingkas = ringkasEstimasiTeks(item.estimasiSaatMasuk);
+                html += `<div class="po-item" style="border-left-color:#1976D2; background:#E3F2FD; padding:8px 10px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px; font-size:13px;">
+                        <span class="nama">${jenisTag} <b>${item.nama}</b> · ${item.jumlah}${item.satuan === 'butir' ? 'btr' : 'pack'} (${item.jumlahButir}btr)</span>
+                        <span style="font-size:12px; color:#555;">📱 ${item.wa}</span>
+                    </div>
+                    ${item.catatan ? `<div style="font-size:11.5px; color:#777; margin-top:2px;">📝 ${item.catatan}</div>` : ''}
+                    ${estRingkas ? `<div style="font-size:11.5px; color:#1565C0; font-weight:600; margin-top:2px;">📋 ${estRingkas}</div>` : ''}
+                    <div style="display:flex; gap:6px; margin-top:6px;">
                         <a href="${waHref}" target="_blank" style="flex:1; text-decoration:none;"><button type="button" style="background:#25D366; width:100%;">💬 Chat WA</button></a>
                         <button type="button" style="flex:1; background:#2E7D32;" onclick="konfirmasiWebMasuk('${item.id}')">✅ Konfirmasi</button>
                         <button type="button" style="flex:1; background:#f44336;" onclick="tolakWebMasuk('${item.id}')">🗑️ Tolak</button>
@@ -971,6 +968,25 @@
                 </div>`;
             });
             container.innerHTML = html;
+        }
+
+        // Ringkas teks estimasi panjang (mis. "Estimasi terpenuhi sekitar 8 hari lagi (kekurangan
+        // 141 butir dari antrian yang ada).") jadi format singkat "estimasi: 8 hari, kurang: 141 btr"
+        // supaya kartu pesanan masuk tidak memakan banyak tempat.
+        function ringkasEstimasiTeks(teks) {
+            if (!teks) return '';
+            let hariMatch = teks.match(/(\d+)\s*hari/i);
+            let butirMatch = teks.match(/(\d[\d.,]*)\s*butir/i);
+            if (hariMatch && butirMatch) {
+                return `estimasi: ${hariMatch[1]} hari, kurang: ${butirMatch[1]} btr`;
+            }
+            if (hariMatch) {
+                return `estimasi: ${hariMatch[1]} hari`;
+            }
+            if (/cukup|ready|siap/i.test(teks)) {
+                return `✅ stok cukup`;
+            }
+            return teks.length > 40 ? teks.slice(0, 40) + '…' : teks;
         }
 
         function waLinkWebMasuk(wa) {
