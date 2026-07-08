@@ -269,6 +269,10 @@
 
     <!-- PO Tab -->
     <div id="tab-po" class="tab-content hidden">
+        <div class="card" id="po-web-masuk-card" style="display:none;"><div class="card-title" style="border-left-color:#1976D2;">🌐 Pesanan Masuk dari 4rfarm.id</div>
+            <div class="info-box" style="margin-bottom:10px;">Ini pesanan dari website, belum resmi masuk antrian PO. Chat WA dulu untuk konfirmasi, baru klik Konfirmasi.</div>
+            <div id="po-web-masuk-list" class="riwayat-list"></div>
+        </div>
         <div class="card"><div class="card-title" style="border-left-color:#25D366;">💬 Input dari Order WA</div>
             <div class="info-box" style="margin-bottom:10px;">💡 Copy teks dari layar "Order" WhatsApp Business (nomor + catatan pesanan), paste di sini. Bisa banyak baris sekaligus, 1 order per baris berpasangan (nomor lalu catatannya).</div>
             <div class="form-group"><label>Paste teks order di sini</label><textarea id="wa-order-paste" rows="6" placeholder="Contoh:&#10;+62 812-9594-7792&#10;Kampung 6 pack, 10/11 Agustus 2026&#10;&#10;+62 857-9030-1819&#10;Horn 3 pack, 7/8 Agustus 2026"></textarea></div>
@@ -434,11 +438,13 @@
             PO: '4rfarm_po',
             PELANGGAN_MASTER: '4rfarm_pelanggan_master',
             BIAYA_TETAP: '4rfarm_biaya_tetap',
-            SERTIFIKAT_LAB: '4rfarm_sertifikat_lab'
+            SERTIFIKAT_LAB: '4rfarm_sertifikat_lab',
+            PO_WEB_MASUK: '4rfarm_po_web_masuk'
         };
 
         // ==================== DATA ====================
         let dataProduksi = [], dataPemasukan = [], dataPengeluaran = [], dataPO = [];
+        let dataPOWebMasuk = []; // pesanan dari 4rfarm.id yang menunggu konfirmasi manual (belum resmi jadi PO)
         let dataPelangganMaster = []; // {id, nama, wa, catatan} - database pelanggan jangka panjang
         let populasi = { horn: 6, elba: 32 }, harga = { horn: 2000, elba: 2500, hornPackPromo: 60000, elbaPackPromo: 75000, hornPack: 23000, elbaPack: 28000 }, stokAwal = { horn: 0, elba: 0 };
         let biayaTetapBulanan = 0;
@@ -454,7 +460,7 @@
 
         // ==================== SYNC ONLINE (Google Apps Script) ====================
         // GANTI URL INI dengan URL Web App hasil deploy Apps Script Bapak
-        const API_URL = 'https://script.google.com/macros/s/AKfycbzfVnLe7BKD7hhxmFOcj6-Kmmzgh_E87L-tQ7qaX3An6aGm2nC_VNni--9BA8neUXlP/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbzIfbMF40XVBCqVPfdK5af3giHQwXSRr0p_hLDvjimVmu6vKPbPjqRIamfDABiXBS00/exec';
         const APP_PIN = 'FARM2026'; // Harus PERSIS SAMA dengan APP_PIN di Code.gs
         let syncTimer = null;
         let isSyncing = false;
@@ -507,6 +513,7 @@
                         dataPemasukan = d.pemasukan || [];
                         dataPengeluaran = d.pengeluaran || [];
                         dataPO = d.po || [];
+                        dataPOWebMasuk = d.poWebMasuk || [];
                         dataPelangganMaster = d.pelangganMaster || [];
                         populasi = d.populasi || populasi;
                         harga = Object.assign({}, harga, d.harga || {});
@@ -515,7 +522,7 @@
                         sertifikatLab = Object.assign({}, sertifikatLab, d.sertifikatLab || {});
                         persistLocalOnly();
                         updateDashboard(); updatePengaturanForm(); updateHargaDisplay(); updateExportStats();
-                        updateRiwayatProduksi(); updateRiwayatPemasukan(); updatePelangganList(); updatePOList(); updateRiwayatPengeluaran(); updateDatalistPelanggan(); updatePelangganMasterList(); updateBiayaTetapForm(); updateSertifikatForm();
+                        updateRiwayatProduksi(); updateRiwayatPemasukan(); updatePelangganList(); updatePOList(); updatePOWebMasukList(); updateRiwayatPengeluaran(); updateDatalistPelanggan(); updatePelangganMasterList(); updateBiayaTetapForm(); updateSertifikatForm();
                         setSyncStatus('✅', 'Data terbaru dari server', '#2E7D32');
                     } catch (err) {
                         setSyncStatus('⚠️', 'Gagal ambil data: ' + err.message, '#f44336');
@@ -617,6 +624,7 @@
             localStorage.setItem(STORAGE_KEYS.PEMASUKAN, JSON.stringify(dataPemasukan));
             localStorage.setItem(STORAGE_KEYS.PENGELUARAN, JSON.stringify(dataPengeluaran));
             localStorage.setItem(STORAGE_KEYS.PO, JSON.stringify(dataPO));
+            localStorage.setItem(STORAGE_KEYS.PO_WEB_MASUK, JSON.stringify(dataPOWebMasuk));
             localStorage.setItem(STORAGE_KEYS.POPULASI, JSON.stringify(populasi));
             localStorage.setItem(STORAGE_KEYS.HARGA, JSON.stringify(harga));
             localStorage.setItem(STORAGE_KEYS.STOK_AWAL, JSON.stringify(stokAwal));
@@ -937,6 +945,116 @@
             savePO(); updatePOList(); updateDashboard();
         }
 
+        // ==================== PESANAN MASUK DARI 4RFARM.ID (belum resmi jadi PO) ====================
+        // Data ini datang dari sheet terpisah 'po_web_masuk' (lihat Code.gs) supaya tidak pernah
+        // tertimpa oleh sync biasa (pushToServer). Baru resmi jadi PO setelah dikonfirmasi manual
+        // di sini -- WA wajib diisi supaya bisa dikonfirmasi dulu ke pemesan sebelum masuk antrian.
+        function updatePOWebMasukList() {
+            let card = document.getElementById('po-web-masuk-card');
+            let container = document.getElementById('po-web-masuk-list');
+            if (!dataPOWebMasuk || dataPOWebMasuk.length === 0) { card.style.display = 'none'; return; }
+            card.style.display = 'block';
+            let html = '';
+            dataPOWebMasuk.forEach(item => {
+                let jenisTag = item.jenis === 'horn' ? '<span class="po-jenis-tag-horn">🐔 Horn</span>' : '<span class="po-jenis-tag-elba">🐔 Kampung</span>';
+                let waHref = waLinkWebMasuk(item.wa);
+                html += `<div class="po-item" style="border-left-color:#1976D2; background:#E3F2FD;">
+                    <div class="po-header-row"><span class="nama">${jenisTag} ${item.nama}</span></div>
+                    <div class="po-meta-row"><span>${item.jumlah}${item.satuan === 'butir' ? 'btr' : 'pack'} (${item.jumlahButir}btr)</span><span>📱 ${item.wa}</span></div>
+                    ${item.catatan ? `<div style="font-size:12px; color:#666; margin-top:4px;">📝 ${item.catatan}</div>` : ''}
+                    ${item.estimasiSaatMasuk ? `<div style="font-size:11.5px; color:#1565C0; margin-top:4px;">📋 ${item.estimasiSaatMasuk}</div>` : ''}
+                    <div style="display:flex; gap:6px; margin-top:8px;">
+                        <a href="${waHref}" target="_blank" style="flex:1; text-decoration:none;"><button type="button" style="background:#25D366; width:100%;">💬 Chat WA</button></a>
+                        <button type="button" style="flex:1; background:#2E7D32;" onclick="konfirmasiWebMasuk('${item.id}')">✅ Konfirmasi</button>
+                        <button type="button" style="flex:1; background:#f44336;" onclick="tolakWebMasuk('${item.id}')">🗑️ Tolak</button>
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function waLinkWebMasuk(wa) {
+            let digit = (wa || '').replace(/\D/g, '');
+            if (digit.startsWith('0')) digit = '62' + digit.slice(1);
+            else if (!digit.startsWith('62')) digit = '62' + digit;
+            return 'https://wa.me/' + digit;
+        }
+
+        // Konfirmasi: pesanan resmi jadi PO (sumber ditandai '4rfarm.id'), lalu dihapus dari kotak masuk
+        function konfirmasiWebMasuk(id) {
+            let item = dataPOWebMasuk.find(o => o.id === id);
+            if (!item) return;
+            if (!confirm(`Konfirmasi pesanan ${item.nama} (${item.jumlah} ${item.satuan}) masuk ke antrian PO?`)) return;
+
+            let nama = upsertPelangganMaster(item.nama, item.wa);
+            let urutanBaru = Math.max(-1, ...dataPO.filter(p => p.status === 'active' && p.jenis === item.jenis).map(p => p.urutan ?? -1)) + 1;
+            dataPO.push({
+                id: Date.now() + Math.floor(Math.random() * 1000),
+                tanggal: new Date().toISOString().split('T')[0],
+                jam: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+                nama: nama, wa: item.wa, jenis: item.jenis, satuan: item.satuan,
+                jumlah: item.jumlah, jumlahButir: item.jumlahButir, lunas: false,
+                status: 'active', urutan: urutanBaru, sumber: '4rfarm.id'
+            });
+            savePO();
+            hapusDariWebMasukLokalDanServer(id);
+            updatePOList(); updateDashboard();
+            alert('Pesanan dikonfirmasi dan masuk antrian PO!');
+        }
+
+        function tolakWebMasuk(id) {
+            let item = dataPOWebMasuk.find(o => o.id === id);
+            if (!item) return;
+            if (!confirm(`Tolak/hapus pesanan dari ${item.nama}? Pesanan ini tidak akan masuk antrian PO.`)) return;
+            hapusDariWebMasukLokalDanServer(id);
+            alert('Pesanan ditolak dan dihapus dari kotak masuk.');
+        }
+
+        // Hapus dari tampilan lokal langsung (optimistic), lalu beri tahu server untuk hapus baris
+        // di sheet po_web_masuk juga (supaya tidak muncul lagi di pull berikutnya).
+        function hapusDariWebMasukLokalDanServer(id) {
+            dataPOWebMasuk = dataPOWebMasuk.filter(o => o.id !== id);
+            persistLocalOnly();
+            updatePOWebMasukList();
+            resolveWebMasukAPI(id);
+        }
+
+        // Kirim permintaan hapus ke server lewat hidden iframe + form POST (bypass CORS, wajib PIN
+        // karena ini action admin, bukan endpoint publik). Fire-and-forget: kalau gagal, baris itu
+        // akan muncul lagi di pull berikutnya dan bisa diproses ulang.
+        function resolveWebMasukAPI(id) {
+            if (!isApiConfigured()) return;
+            let iframeName = 'resolve_frame_' + Date.now();
+            let iframe = document.createElement('iframe');
+            iframe.name = iframeName;
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+
+            let form = document.createElement('form');
+            form.method = 'POST';
+            form.action = API_URL + '?action=resolveWebMasuk';
+            form.target = iframeName;
+
+            let payloadInput = document.createElement('input');
+            payloadInput.type = 'hidden';
+            payloadInput.name = 'payload';
+            payloadInput.value = JSON.stringify({ id: id });
+            form.appendChild(payloadInput);
+
+            let pinInput = document.createElement('input');
+            pinInput.type = 'hidden';
+            pinInput.name = 'pin';
+            pinInput.value = APP_PIN;
+            form.appendChild(pinInput);
+
+            document.body.appendChild(form);
+            iframe.onload = () => {
+                if (form.parentNode) form.parentNode.removeChild(form);
+                setTimeout(() => { if (iframe.parentNode) iframe.parentNode.removeChild(iframe); }, 3000);
+            };
+            form.submit();
+        }
+
         // Urutan antrian PO per jenis (horn/elba) disimpan lewat field `urutan` (angka, makin kecil makin depan antrian).
         // PO yang belum punya `urutan` akan diberi urutan berdasarkan id (FIFO) saat pertama kali dirender.
         function pastikanUrutanPO() {
@@ -967,7 +1085,8 @@
 
         function renderPOItem(po, stokCukup, stokInfo, estimasiInfo, jenisTagHtml, isFirst, isLast) {
             let jenisClass = po.jenis === 'horn' ? 'po-horn' : 'po-elba';
-            return `<div class="po-item ${jenisClass}"><div class="po-header-row"><span class="nama">${jenisTagHtml} ${po.nama}</span><span class="po-actions">
+            let sumberBadge = po.sumber === '4rfarm.id' ? ' <span style="display:inline-block; background:#E3F2FD; color:#1565C0; font-size:10px; font-weight:600; padding:2px 6px; border-radius:10px; vertical-align:middle;">🌐 4rfarm.id</span>' : '';
+            return `<div class="po-item ${jenisClass}"><div class="po-header-row"><span class="nama">${jenisTagHtml} ${po.nama}${sumberBadge}</span><span class="po-actions">
                 <span class="po-reorder-btns">
                     <button class="small icon-only compact" style="background:#607D8B;" onclick="geserPO(${po.id},-1)" ${isFirst ? 'disabled style="opacity:0.3;"' : ''}>▲</button>
                     <button class="small icon-only compact" style="background:#607D8B;" onclick="geserPO(${po.id},1)" ${isLast ? 'disabled style="opacity:0.3;"' : ''}>▼</button>
@@ -1741,10 +1860,11 @@
             let hr=localStorage.getItem(STORAGE_KEYS.HARGA); if(hr) harga=Object.assign({}, harga, JSON.parse(hr));
             let st=localStorage.getItem(STORAGE_KEYS.STOK_AWAL); if(st) stokAwal=JSON.parse(st);
             let po=localStorage.getItem(STORAGE_KEYS.PO); if(po) dataPO=JSON.parse(po);
+            let pwm=localStorage.getItem(STORAGE_KEYS.PO_WEB_MASUK); if(pwm) dataPOWebMasuk=JSON.parse(pwm);
             let pl=localStorage.getItem(STORAGE_KEYS.PELANGGAN_MASTER); if(pl) dataPelangganMaster=JSON.parse(pl);
             let bt=localStorage.getItem(STORAGE_KEYS.BIAYA_TETAP); if(bt) biayaTetapBulanan=JSON.parse(bt);
             let sl=localStorage.getItem(STORAGE_KEYS.SERTIFIKAT_LAB); if(sl) sertifikatLab=Object.assign({}, sertifikatLab, JSON.parse(sl));
-            updateDashboard(); updatePengaturanForm(); updateBiayaTetapForm(); updateSertifikatForm(); updateHargaDisplay(); updateExportStats(); updateRiwayatProduksi(); updateRiwayatPemasukan(); updatePelangganList(); updatePOList(); updateRiwayatPengeluaran(); updateDatalistPelanggan(); updatePelangganMasterList();
+            updateDashboard(); updatePengaturanForm(); updateBiayaTetapForm(); updateSertifikatForm(); updateHargaDisplay(); updateExportStats(); updateRiwayatProduksi(); updateRiwayatPemasukan(); updatePelangganList(); updatePOList(); updatePOWebMasukList(); updateRiwayatPengeluaran(); updateDatalistPelanggan(); updatePelangganMasterList();
             // 2) Lalu tarik data terbaru dari server (siapa tahu istri/suami baru input dari HP lain)
             pullFromServer();
         }
