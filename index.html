@@ -1425,7 +1425,7 @@
             let container=document.getElementById('riwayat-produksi');
             if(dataProduksi.length===0){ container.innerHTML='<div class="info-box" style="text-align:center;">Belum ada data</div>'; return; }
             let html='';
-            [...dataProduksi].reverse().slice(0,15).forEach(p=>{
+            [...dataProduksi].sort((a,b)=>b.tanggal.localeCompare(a.tanggal)||b.jam.localeCompare(a.jam)).slice(0,15).forEach(p=>{
                 html+=`<div class="riwayat-compact produksi">
                     <div class="riwayat-compact-row">
                         <div class="riwayat-compact-icon">📅</div>
@@ -1758,7 +1758,7 @@
             let container=document.getElementById('riwayat-pemasukan');
             if(dataPemasukan.length===0){ container.innerHTML='<div class="info-box" style="text-align:center;">Belum ada data</div>'; return; }
             let html='';
-            [...dataPemasukan].reverse().slice(0,15).forEach(p=>{
+            [...dataPemasukan].sort((a,b)=>b.tanggal.localeCompare(a.tanggal)||b.id-a.id).slice(0,15).forEach(p=>{
                 let tipeClass='', icon='', judul='', detailText='';
                 if(p.tipe==='jual'){ tipeClass='jual'; icon='💰'; judul=`Penjualan ${p.jenis==='horn'?'Horn':'Kampung'}`; detailText=`${p.jumlahButir} butir • ${formatRupiah(p.total)} • ${p.pembeli}`; }
                 else if(p.tipe==='gift'){ tipeClass='gift'; icon='🎁'; judul=`Gift ${p.jenis==='horn'?'Horn':'Kampung'}`; detailText=`${p.jumlahButir} butir • ke: ${p.penerima}`; }
@@ -1799,8 +1799,19 @@
             if(dataPengeluaran.length===0){ container.innerHTML='<div class="info-box" style="text-align:center;">Belum ada data pengeluaran</div>'; return; }
             let kategoriMap = { pakan: '🍚 Pakan', obat: '💊 Obat', perawatan: '🔨 Perawatan', lainnya: '📦 Lainnya' };
             let html='';
-            [...dataPengeluaran].reverse().slice(0,15).forEach(p=>{
-                html+=`<div class="riwayat-item pengeluaran"><div class="riwayat-header"><span>💸 ${kategoriMap[p.kategori] || p.kategori}</span><span>${p.tanggal}</span></div><div class="riwayat-detail">${formatRupiah(p.nominal)} | ${p.keterangan || '-'}</div><div class="riwayat-actions"><button class="delete-entry" onclick="hapusPengeluaran(${p.id})">🗑️ Hapus</button></div></div>`;
+            [...dataPengeluaran].sort((a,b)=>b.tanggal.localeCompare(a.tanggal)||b.id-a.id).slice(0,15).forEach(p=>{
+                html+=`<div class="riwayat-compact pengeluaran">
+                    <div class="riwayat-compact-row">
+                        <div class="riwayat-compact-icon">💸</div>
+                        <div class="riwayat-compact-main">
+                            <div class="riwayat-compact-top"><span>${kategoriMap[p.kategori] || p.kategori}</span><span class="rc-date">${p.tanggal.slice(5)}</span></div>
+                            <div class="riwayat-compact-detail">${formatRupiah(p.nominal)}${p.keterangan?' • '+p.keterangan:''}</div>
+                        </div>
+                        <div class="riwayat-compact-actions">
+                            <button onclick="hapusPengeluaran(${p.id})" title="Hapus" style="color:#f44336;">🗑️</button>
+                        </div>
+                    </div>
+                </div>`;
             });
             container.innerHTML=html;
         }
